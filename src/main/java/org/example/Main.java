@@ -1,17 +1,23 @@
 package org.example;
 
+import javax.swing.*;
+import java.awt.*;
+
 //TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 public class Main {
-    public static void main(String[] args) {
-        //TIP Press <shortcut actionId="ShowIntentionActions"/> with your caret at the highlighted text
-        // to see how IntelliJ IDEA suggests fixing it.
-        System.out.printf("Hello and welcome!");
+    public static final int WINDOW_WIDTH = (int) Toolkit.getDefaultToolkit().getScreenSize().getWidth();
+    public static final int WINDOW_HEIGHT = (int) Toolkit.getDefaultToolkit().getScreenSize().getHeight();
 
-        for (int i = 1; i <= 5; i++) {
-            //TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-            // for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.
-            System.out.println("i = " + i);
-        }
+    public static void main(String[] args) {
+        JFrame window = new JFrame("Suger Rush");
+        window.setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+        window.setResizable(false);
+        window.setLocationRelativeTo(null);
+        window.setLayout(null);
+        window.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        window.add(new MainScenePanel(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT));
+        window.setVisible(true);
+
     }
 }

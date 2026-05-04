@@ -1,13 +1,15 @@
 package org.example;
-import java.awt.*;
+
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
-
 public class MovementListener implements KeyListener {
     private Player player;
+    private MainScenePanel panel; // הוספנו את לוח המשחק כדי שנוכל לבדוק התנגשות בעוגות
 
-    public MovementListener(Player player) {
+    // עדכנו את הבנאי כך שיקבל גם את הלוח וגם את השחקן
+    public MovementListener(MainScenePanel panel, Player player) {
+        this.panel = panel;
         this.player = player;
     }
 
@@ -15,12 +17,18 @@ public class MovementListener implements KeyListener {
     }
 
     public void keyPressed(KeyEvent e) {
+        // 1. שומרים את המיקום הישן של השחקן לפני התזוזה
+        int oldX = this.player.getX();
+        int oldY = this.player.getY();
+
         if (e.getKeyCode() == KeyEvent.VK_RIGHT ||
                 e.getKeyCode() == KeyEvent.VK_LEFT||
                 e.getKeyCode() == KeyEvent.VK_DOWN||
                 e.getKeyCode() == KeyEvent.VK_UP) {
             this.player.setIsMoving(true);
         }
+
+        // 2. מזיזים את השחקן לפי החץ שנלחץ
         if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
             this.player.moveRight();
         } else if (e.getKeyCode() == KeyEvent.VK_LEFT) {
@@ -31,7 +39,13 @@ public class MovementListener implements KeyListener {
             this.player.moveUp();
         }
 
-
+        // 3. --- בדיקת ההתנגשות! ---
+        // שואלים את הלוח אם השחקן נגע עכשיו בעוגה
+        if (this.panel.checkCakeCollision()) {
+            // אם כן, מחזירים אותו מיד למיקום הישן (כך שהוא "ייתקע" בקיר)
+            this.player.setX(oldX);
+            this.player.setY(oldY);
+        }
     }
 
     public void keyReleased(KeyEvent e) {

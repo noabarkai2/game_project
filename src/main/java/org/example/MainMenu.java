@@ -68,6 +68,7 @@ public class MainMenu extends JFrame {
         backgroundPanel.stopAnimation();
         this.dispose(); // סוגר את החלון של הבאקראונד
         JFrame window = new JFrame("Sugar Rush");
+        window.setUndecorated(true);
         window.setSize(Main.WINDOW_WIDTH, Main.WINDOW_HEIGHT);
         window.setResizable(false);
         window.setLocationRelativeTo(null);

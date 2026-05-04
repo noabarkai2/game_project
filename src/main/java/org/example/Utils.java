@@ -41,6 +41,7 @@ public class Utils {
         soundButton.setFocusPainted(false);
         soundButton.setContentAreaFilled(false);
         soundButton.setBorderPainted(false);
+        soundButton.setFocusable(false);
 
         // הגדרת תמונה התחלתית לפי המצב הנוכחי של המוזיקה
         if (isMusicPlaying && soundOnIcon != null) {

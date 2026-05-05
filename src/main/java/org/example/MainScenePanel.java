@@ -126,8 +126,8 @@ public class MainScenePanel extends JPanel {
 // עכשיו אנחנו שולטים בכל כיוון בנפרד!
         int padLeft = 14;   // חותכים מהצדדים כדי שייכנס למעברים
         int padRight = 14;
-        int padTop = 22;    // חותכים הרבה מלמעלה בגלל הדובדבן והשטח הריק
-        int padBottom = 5;  // חותכים ממש מעט מלמטה, כדי שלא יעלה על העוגות!
+        int padTop = 22;
+        int padBottom = 5;
 
         Rectangle smallCharacterRect = new Rectangle(
                 characterRect.x + padLeft,

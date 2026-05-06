@@ -11,7 +11,7 @@ public class LevelsBackground {
 
     public LevelsBackground(){
         try{
-            InputStream inputStream = LevelsBackground.class.getResourceAsStream("/levels_background.png");
+            InputStream inputStream = LevelsBackground.class.getResourceAsStream("/background_level.jpeg");
             this.backgroundImage = ImageIO.read(inputStream);
         }catch (Exception e){
             e.printStackTrace();

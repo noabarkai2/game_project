@@ -17,7 +17,7 @@ public class Cake{
         this.y = y;
         this.width = width;
         this.height = height;
-        String[] imagePaths = {"/cake1.png", "/cake2.png", "/cake3.png"};
+        String[] imagePaths = {"/cake1.png", "/cake2.png", "/cake3.png", "/cake4.png"};
         Random random = new Random();
         int randomIndex = random.nextInt(imagePaths.length);
         try{

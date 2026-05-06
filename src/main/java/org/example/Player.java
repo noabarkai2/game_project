@@ -80,6 +80,12 @@ public class Player {
     public void setY(int y) {
         this.y = y;
     }
+    public int getWidth(){
+        return this.width;
+    }
+    public int getHeight(){
+        return this.width;
+    }
     public void setIsMoving(boolean moving) {
         this.isMoving = moving;
     }
@@ -224,6 +230,7 @@ public class Player {
             }
         }
     }
+
     public Rectangle getRect(){
         Rectangle rectangle = new Rectangle(this.x, this.y, this.width, this.height);
         return rectangle;

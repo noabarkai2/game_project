@@ -1,6 +1,8 @@
 package org.example;
 
+import javax.imageio.ImageIO;
 import java.awt.*;
+import java.io.InputStream;
 import java.util.Random;
 
 public class Enemy {
@@ -56,35 +58,57 @@ public class Enemy {
         if (!isMoving) {
             return;
         }
+
+        boolean hitBoundary = false;
+
         switch (this.direction) {
             case RIGHT:
                 if (this.x + this.width < Main.WINDOW_WIDTH) {
                     this.currentImage = rightImage;
                     this.x += 2;
+                } else {
+                    hitBoundary = true;
                 }
                 break;
             case LEFT:
                 if (this.x > 0) {
                     this.currentImage = leftImage;
                     this.x -= 2;
+                }else {
+                    hitBoundary = true;
                 }
                 break;
             case UP:
                 if (this.y > 0) {
                     this.currentImage = backImage;
                     this.y -= 2;
+                }else {
+                    hitBoundary = true;
                 }
                 break;
             case DOWN:
                 if (this.y + this.height < Main.WINDOW_HEIGHT - 40) {
                     this.currentImage = frontImage;
                     this.y += 2;
+                }else {
+                    hitBoundary = true;
                 }
                 break;
         }
-
         if (random.nextInt(100) == 0) {
             this.direction = random.nextInt(1, 5);
+        }
+
+        if (hitBoundary || random.nextInt(150) == 0) {
+            if (this.direction == RIGHT) {
+                this.direction = LEFT;
+            } else if (this.direction == LEFT){
+                this.direction = RIGHT;
+            }else if (this.direction == UP){
+                this.direction = DOWN;
+            }else if (this.direction == DOWN){
+                this.direction = UP;
+            }
         }
     }
 
@@ -131,6 +155,18 @@ public class Enemy {
     public void paint(Graphics graphics) {
         if (this.currentImage != null) {
             graphics.drawImage(this.currentImage, this.x, this.y, this.width, this.height, null);
+        }
+    }
+
+    private Image loadImage(String imagePath) {
+        try {
+            InputStream imageStream = getClass().getResourceAsStream(imagePath);
+            if (imageStream != null) {
+                return ImageIO.read(imageStream);
+            }
+            return null;
+        } catch (Exception e) {
+            return null;
         }
     }
 }

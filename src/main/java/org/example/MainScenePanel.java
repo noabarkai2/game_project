@@ -141,9 +141,9 @@ public class MainScenePanel extends JPanel {
         this.enemies = new Enemy[7];
         this.enemies[0] = new EnemyBroccoli(200, 100, 80, 80);
         this.enemies[1] = new EnemyBroccoli(400, 200, 80, 80);
-        this.enemies[2] = new EnemyCorn(600, 300, 80, 80);
+        this.enemies[2] = new EnemyBroccoli(600, 300, 80, 80);
 
-        this.enemies[3] = new EnemyCarrot(150, 200, 80, 80);
+        this.enemies[3] = new EnemyEggplant(150, 200, 80, 80);
         this.enemies[4] = new EnemyEggplant(300, 450, 80, 80);
         this.enemies[5] = new EnemyEggplant(450, 500, 80, 80);
 

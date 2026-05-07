@@ -137,7 +137,6 @@ public class MainScenePanel extends JPanel {
                 cakes[cakesCount++] = new Cake(xPositions[i] * CAKE_SIZE, yPositions[i] * CAKE_SIZE, CAKE_SIZE, CAKE_SIZE);
             }
         }
-        this.player = new Player(100, 100, 60, 60);
         this.enemies = new Enemy[7];
         this.enemies[0] = new EnemyBroccoli(200, 100, 80, 80);
         this.enemies[1] = new EnemyBroccoli(400, 200, 80, 80);
@@ -154,6 +153,7 @@ public class MainScenePanel extends JPanel {
         for (int i = 0; i < this.enemies.length; i++) {
             this.enemies[i].setIsMoving(true);
         }
+        this.player = new Player(100, 100, 60, 60);
 
 
         this.setFocusable(true);//רשאי לקבל פוקוס מהמקלדת
@@ -237,7 +237,7 @@ public class MainScenePanel extends JPanel {
                 }
                 //וספת מהירות לאויב(אוייב מתחיל במהירות 2)
                 for (int i = 0; i < 3; i++) {
-                    this.enemies[i].addSpeed(3);
+                    this.enemies[i].addSpeed(1);
                 }
                 checkPrizeCollisions();
                 repaint();

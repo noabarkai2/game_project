@@ -6,25 +6,31 @@ import java.io.InputStream;
 import java.util.Random;
 
 public class Enemy {
-    public int x;
-    public int y;
-    public int width;
-    public int height;
-    public int direction;
 
     public static final int RIGHT = 1;
     public static final int LEFT = 2;
     public static final int UP = 3;
     public static final int DOWN = 4;
 
-    public Image currentImage;
-    public Image backImage;
-    public Image frontImage;
-    public Image rightImage;
-    public Image leftImage;
+    private int x;
+    private int y;
+    private int width;
+    private int height;
+    private int direction;
 
-    public boolean isMoving = false;
-    public Random random = new Random();
+    private Image currentImage;
+    private Image backImage;
+    private Image frontImage;
+    private Image rightImage;
+    private Image leftImage;
+
+    private boolean isMoving = false;
+    private Random random = new Random();
+
+    private int offsetLeft;
+    private int offsetRight;
+    private int offsetTop;
+    private int offsetBottom;
 
     public Enemy(int x, int y, int width, int height) {
         this.x = x;
@@ -32,38 +38,67 @@ public class Enemy {
         this.width = width;
         this.height = height;
         this.direction = DOWN;
+        this.offsetLeft = 50;
+        this.offsetRight = 48;
+        this.offsetTop = 35;
+        this.offsetBottom = 50;
     }
 
-    public int getX() {
-        return this.x;
+    // הילדים קוראים לפונקציות האלה כדי לזוז, בלי לדעת איך זה עובד מאחורי הקלעים!
+    public void moveHorizontally(int amount) {
+        this.x += amount;
     }
 
-    public int getY() {
-        return this.y;
+    public void moveVertically(int amount) {
+        this.y += amount;
     }
 
-    public int getWidth() {
-        return this.width;
-    }
+    // בודק אם האויב על הגבולות
+    public boolean isAtRightBoundary() { return this.x + this.width >= Main.WINDOW_WIDTH - offsetRight; }
+    public boolean isAtLeftBoundary() { return this.x <= offsetLeft; }
+    public boolean isAtTopBoundary() { return this.y <= offsetTop; }
+    public boolean isAtBottomBoundary() { return this.y + this.height >= Main.WINDOW_HEIGHT - offsetBottom; }
 
-    public int getHeight() {
-        return this.height;
-    }
+    // --- Getters & Setters ---
+    public int getX() { return this.x; }
+    public int getY() { return this.y; }
+    public int getWidth() { return this.width; }
+    public int getHeight() { return this.height; }
+    public int getDirection() { return this.direction; }
+    public void setX(int x) { this.x = x;}
+    public void setY(int y) { this.y = y;}
+    public void setDirection(int direction) { this.direction = direction; }
+    public boolean isMoving() { return this.isMoving; }
+    public void setIsMoving(boolean moving) { this.isMoving = moving; }
+    public Random getRandom() { return this.random; }
 
-    public void setIsMoving(boolean moving) {
-        this.isMoving = moving;
+    // ניהול תמונות
+    public void setCurrentImage(Image img) { this.currentImage = img; }
+    public void setFrontImage(Image img) { this.frontImage = img; }
+    public void setBackImage(Image img) { this.backImage = img; }
+    public void setRightImage(Image img) { this.rightImage = img; }
+    public void setLeftImage(Image img) { this.leftImage = img; }
+
+    public Image getFrontImage() { return this.frontImage; }
+    public Image getBackImage() { return this.backImage; }
+    public Image getRightImage() { return this.rightImage; }
+    public Image getLeftImage() { return this.leftImage; }
+
+
+    public Rectangle getRect() {
+        // בגלל שהקטנו את האויבים ל-40, הם כבר נכנסים במעברים של ה-50 בקלות
+        // נשאיר רק מרווח ביטחון קטן מאוד של 2 פיקסלים
+        return new Rectangle(this.x , this.y , this.width , this.height );
     }
 
     public void move() {
         if (!isMoving) {
             return;
         }
-
         boolean hitBoundary = false;
-
         switch (this.direction) {
             case RIGHT:
-                if (this.x + this.width < Main.WINDOW_WIDTH) {
+                if (this.x + this.width < Main.WINDOW_WIDTH - this.offsetRight) {
                     this.currentImage = rightImage;
                     this.x += 2;
                 } else {
@@ -71,44 +106,36 @@ public class Enemy {
                 }
                 break;
             case LEFT:
-                if (this.x > 0) {
+                if (this.x > this.offsetLeft) {
                     this.currentImage = leftImage;
                     this.x -= 2;
-                }else {
+                } else {
                     hitBoundary = true;
                 }
                 break;
             case UP:
-                if (this.y > 0) {
+                if (this.y > this.offsetTop) {
                     this.currentImage = backImage;
                     this.y -= 2;
-                }else {
+                } else {
                     hitBoundary = true;
                 }
                 break;
             case DOWN:
-                if (this.y + this.height < Main.WINDOW_HEIGHT - 40) {
+                if (this.y + this.height < Main.WINDOW_HEIGHT - this.offsetBottom) {
                     this.currentImage = frontImage;
                     this.y += 2;
-                }else {
+                } else {
                     hitBoundary = true;
                 }
                 break;
         }
-        if (random.nextInt(100) == 0) {
+        if (random.nextInt(200) == 0) {
             this.direction = random.nextInt(1, 5);
         }
 
-        if (hitBoundary || random.nextInt(150) == 0) {
-            if (this.direction == RIGHT) {
-                this.direction = LEFT;
-            } else if (this.direction == LEFT){
-                this.direction = RIGHT;
-            }else if (this.direction == UP){
-                this.direction = DOWN;
-            }else if (this.direction == DOWN){
-                this.direction = UP;
-            }
+        if (hitBoundary || random.nextInt(250) == 0) {
+            reverseDirection();
         }
     }
 
@@ -116,21 +143,29 @@ public class Enemy {
         if (isMoving) {
             switch (this.direction) {
                 case RIGHT:
-                    this.x += speed;
+                    if (this.x + this.width + speed < Main.WINDOW_WIDTH - this.offsetRight) {
+                        this.x += speed;
+                    }
                     break;
                 case LEFT:
-                    this.x -= speed;
+                    if (this.x - speed > this.offsetLeft) {
+                        this.x -= speed;
+                    }
                     break;
                 case UP:
-                    this.y -= speed;
+                    if (this.y - speed < this.offsetTop) {
+                        this.y -= speed;
+                    }
                     break;
                 case DOWN:
-                    this.y += speed;
+                    if (this.y + this.height + speed < Main.WINDOW_HEIGHT - this.offsetBottom) {
+                        this.y += speed;
+                    }
                     break;
             }
-            if (random.nextInt(150) == 0) {
-                this.direction = random.nextInt(1, 5);
-            }
+//            if (random.nextInt(150) == 0) {
+//                this.direction = random.nextInt(1, 5);
+//            }
         }
     }
 
@@ -158,7 +193,7 @@ public class Enemy {
         }
     }
 
-    private Image loadImage(String imagePath) {
+    public Image loadImage(String imagePath) {
         try {
             InputStream imageStream = getClass().getResourceAsStream(imagePath);
             if (imageStream != null) {

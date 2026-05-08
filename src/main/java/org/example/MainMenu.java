@@ -24,8 +24,11 @@ public class MainMenu extends JFrame {
 
         Utils.initializeMusic(MUSIC_PATH);
 
-        BackgroundPanel backgroundPanel = new BackgroundPanel();
+        BackgroundPanel backgroundPanel = new BackgroundPanel("/background_menu.jpeg");
         this.setContentPane(backgroundPanel);
+
+        RoundedButton exitButton = RoundedButton.createExitButton(Main.WINDOW_WIDTH - 80, 12);
+        this.add(exitButton);
 
         int buttonX = (Main.WINDOW_WIDTH - BUTTON_WIDTH) / 2;
         RoundedButton startButton = new RoundedButton("Start", 40);
@@ -43,6 +46,16 @@ public class MainMenu extends JFrame {
         instructionButton.setForeground(Color.WHITE);
         instructionButton.setFocusPainted(false);
         instructionButton.setBounds(buttonX, INSTRUCTIONS_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT);
+        instructionButton.addActionListener(e -> {
+
+            // 1. יוצרים את פאנל ההוראות (תלוי איך חברה שלך בנתה אותו בינתיים)
+            // אם היא עשתה שהוא מקבל מידות, תשאירי עם הפרמטרים. אם לא - תמחקי אותם ותשאירי רק סוגריים ריקים: new InstructionsPanel()
+            InstructionsPanel instructionsPanel = new InstructionsPanel(Main.WINDOW_WIDTH, Main.WINDOW_HEIGHT, backgroundPanel, this);
+            // 2. מחליפים את התצוגה מפאנל התפריט לפאנל ההוראות
+            this.setContentPane(instructionsPanel);
+            this.revalidate();
+            this.repaint();
+        });
         backgroundPanel.add(instructionButton);
 
         JButton soundButton = Utils.createSoundButton();

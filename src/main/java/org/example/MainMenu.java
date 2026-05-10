@@ -6,7 +6,7 @@ import java.awt.*;
 public class MainMenu extends JFrame {
     private static final int BUTTON_WIDTH = 300;
     private static final int BUTTON_HEIGHT = 70;
-    private static final int START_BUTTON_Y = 250;
+    private static final int START_BUTTON_Y = 200;
     private static final int INSTRUCTIONS_BUTTON_Y = START_BUTTON_Y + 90;
     private static final int BUTTON_FONT_SIZE = 30;
 
@@ -51,6 +51,7 @@ public class MainMenu extends JFrame {
             // 1. יוצרים את פאנל ההוראות (תלוי איך חברה שלך בנתה אותו בינתיים)
             // אם היא עשתה שהוא מקבל מידות, תשאירי עם הפרמטרים. אם לא - תמחקי אותם ותשאירי רק סוגריים ריקים: new InstructionsPanel()
             InstructionsPanel instructionsPanel = new InstructionsPanel(Main.WINDOW_WIDTH, Main.WINDOW_HEIGHT, backgroundPanel, this);
+
             // 2. מחליפים את התצוגה מפאנל התפריט לפאנל ההוראות
             this.setContentPane(instructionsPanel);
             this.revalidate();

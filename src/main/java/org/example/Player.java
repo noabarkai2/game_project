@@ -38,6 +38,8 @@ public class Player {
     // קובע את קצב ההחלפה - כמה זמן נחכה עד שנעבור לתא הבא במערך (אפשר לשנות את המספר כדי להאיץ/להאט)
     private int animationSpeed = 2;
 
+    private boolean wasShowingGif = false;
+
     private boolean isMoving = false;
 
     // מקדם הגדלה: מגדיר פי כמה נרצה להגדיל את התמונה של הגיף כדי שתיראה טוב יותר על המסך
@@ -257,12 +259,30 @@ public class Player {
         updateGifDimensions();
     }
 
-    public void paint(Graphics graphics) {
+    public void paint(Graphics graphics , boolean isPaused) {
 
         long idleTime = System.currentTimeMillis() - this.lastMoveTime;
 
-        if (idleTime < 1000) {
+        boolean shouldShowGif = (idleTime >= 1000);
 
+        // --- התיקון החדש לבעיית הקפיצה ---
+        if (isPaused) {
+            // אם המשחק בעצירה, אנחנו מתעלמים מהזמן ומשתמשים בזיכרון שלנו
+            shouldShowGif = this.wasShowingGif;
+
+            // טריק: אם היינו בתמונת תנועה כשעצרנו, נמשוך את זמן התזוזה קדימה
+            // כדי שברגע שנחזור מהעצירה, הטיימר לא יקפוץ מיד לגיף!
+            if (!shouldShowGif) {
+                this.lastMoveTime = System.currentTimeMillis();
+            }
+        } else {
+            // אם המשחק רץ, נשמור את המצב הנוכחי בזיכרון למקרה שנעצור פתאום
+            this.wasShowingGif = shouldShowGif;
+        }
+        // ------------------------------------
+
+        // שלב ב': ציור תמונת התנועה הסטטית (אם הוחלט לא להראות גיף)
+        if (!shouldShowGif) {
             if (this.currentImage != null) {
                 graphics.drawImage(
                         this.currentImage,
@@ -273,11 +293,13 @@ public class Player {
                         null
                 );
             }
-
-            return;
+            return; // סיימנו לצייר, יוצאים מהפונקציה
         }
 
-        updateAnimation();
+        // שלב ג': ציור אנימציית הגיף
+        if (!isPaused) {
+            updateAnimation(); // מקדמים את האנימציה רק אם אנחנו לא בעצירה
+        }
 
         if (this.frames != null && this.frames.length > 0) {
             graphics.drawImage(
@@ -290,6 +312,7 @@ public class Player {
             );
         }
     }
+
     public Rectangle getRect(){
         Rectangle rectangle = new Rectangle(this.x, this.y, this.width, this.height);
         return rectangle;

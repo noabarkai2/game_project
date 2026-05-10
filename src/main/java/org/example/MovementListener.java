@@ -17,6 +17,10 @@ public class MovementListener implements KeyListener {
     }
 
     public void keyPressed(KeyEvent e) {
+        if (this.panel.isPaused()) {
+            return;
+        }
+
         // 1. שומרים את המיקום הישן של השחקן לפני התזוזה
         int oldX = this.player.getX();
         int oldY = this.player.getY();
@@ -49,9 +53,12 @@ public class MovementListener implements KeyListener {
     }
 
     public void keyReleased(KeyEvent e) {
+        if (this.panel.isPaused()) {
+            return;
+        }
         if (e.getKeyCode() == KeyEvent.VK_RIGHT ||
-                e.getKeyCode() == KeyEvent.VK_LEFT||
-                e.getKeyCode() == KeyEvent.VK_DOWN||
+                e.getKeyCode() == KeyEvent.VK_LEFT ||
+                e.getKeyCode() == KeyEvent.VK_DOWN ||
                 e.getKeyCode() == KeyEvent.VK_UP) {
             this.player.setIsMoving(false);
         }

@@ -3,7 +3,7 @@ package org.example;
 public class EnemyBellPepper extends Enemy {
 
     private Player targetPlayer;
-    private int confusedTimer = 0; // מונה בלבול כשהגמבה נתקעת בקיר
+    private int confusedTimer = 0; // מספר פריימים שהגמבה זזה כשהיא נתקעת
 
     public EnemyBellPepper(int x, int y, int width, int height, Player player) {
         super(x, y, width, height);
@@ -24,7 +24,7 @@ public class EnemyBellPepper extends Enemy {
     @Override
     public void move() {
         if (!isMoving() || this.targetPlayer == null) return;
-// אם הגמבה נתקעה בקיר, זה עושה שלא תזוז לכיוון שהפנו אותה
+        // אם הגמבה נתקעה בקיר, זה עושה שלא תזוז לכיוון שהפנו אותה
         if (confusedTimer > 0) {
             confusedTimer--;
             if (getDirection() == RIGHT && !isAtRightBoundary()) moveHorizontally(1);

@@ -22,7 +22,7 @@ public class Utils {
     }
 
     public static void initializeMusic(String path) {
-        if (backgroundMusic == null) // צריך לבדוק
+        if (backgroundMusic == null)
         {
             backgroundMusic = new SoundManager(path);
             backgroundMusic.playLoop();

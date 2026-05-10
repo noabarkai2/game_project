@@ -4,35 +4,59 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.util.Random;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 import java.net.URL;
+import java.util.Random;
 
 public class MainScenePanel extends JPanel {
     private Player player;
     private Cake[] cakes;
     private Enemy[] enemies;
-    private int score;
     private Prize[] prizes;
-    private String[] candyImages;
-    private int cakesCount;
-    private final int CAKE_SIZE = 50;
-    private LevelsBackground levelsBackground;
-    private JButton soundButton;
 
+    private int score;
+    private int cakesCount;
     private int currentLevel = 1;
-    private final int MAX_LEVELS = 9;
+    private int timeLeft = 60;
+    private int timerCounter = 0;
+
+    private final int CAKE_SIZE = 50;
+    private final int ENEMY_SIZE = 46;
+    private final int MAX_LEVELS = GameSettings.MAX_LEVELS;
+
+    private String[] candyImages;
+    private LevelBackground levelsBackground;
+    private JButton soundButton;
+    private SoundManager tickingSound;
+    private PrizeManager prizeManager;
 
     private boolean isPaused = false;
     private boolean isLevelStarting = true;
-
-    // --- משתני טיימר ---
-    private int timeLeft = 60; // כמות השניות הכוללת (דקה)
-    private int timerCounter = 0; // מונה שסופר את הריצות של הלולאה
+    private boolean isGameRunning = true;
 
     public MainScenePanel(int x, int y, int width, int height) {
+        this(x, y, width, height, 1);
+    }
+
+    public MainScenePanel(int x, int y, int width, int height, int startLevel) {
+        this.currentLevel = startLevel;
+
+        initializeImages();
+        initializePanel(x, y, width, height);
+        initializeKeyListener();
+
+        this.setDoubleBuffered(true);
+
+        loadLevel(currentLevel);
+        initializeMovementListener();
+        initializeButtons(width);
+
+        this.gameLoop();
+    }
+
+    private void initializeImages() {
         this.candyImages = new String[]{
                 "/Blue_candy.png",
                 "/Orange_candy.png",
@@ -40,228 +64,265 @@ public class MainScenePanel extends JPanel {
                 "/Purple_candy.png",
                 "/Yellow_candy.png"
         };
+    }
+
+    private void initializePanel(int x, int y, int width, int height) {
+        this.tickingSound = new SoundManager("/Clock_sound.wav");
+        this.prizeManager = new PrizeManager();
+
         this.setBounds(x, y, width, height);
         this.setLayout(null);
-        this.levelsBackground = new LevelsBackground();
+        this.levelsBackground = new LevelBackground();
 
         this.setFocusable(true);
         this.requestFocus();
+    }
 
+    private void initializeKeyListener() {
         this.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_SPACE) {
-                    if (isLevelStarting) {
-                        // אם אנחנו במסך ההמתנה של תחילת השלב, נשחרר את העצירה ונתחיל לשחק!
-                        isLevelStarting = false;
-                        isPaused = false;
-                    } else {
-                        // אם אנחנו במהלך משחק רגיל, נעשה עצירה רגילה או נחזור ממנה
-                        isPaused = !isPaused;
-                    }
-                    repaint(); // ציור מחדש
+                    togglePause();
+                    repaint();
                 }
             }
         });
+    }
 
-        this.setDoubleBuffered(true);
+    private void togglePause() {
+        if (isLevelStarting) {
+            isLevelStarting = false;
+            isPaused = false;
+        } else {
+            isPaused = !isPaused;
+        }
+    }
 
-        loadLevel(currentLevel);
-
+    private void initializeMovementListener() {
         MovementListener movementListener = new MovementListener(this, this.player);
         this.addKeyListener(movementListener);
+    }
 
+    private void initializeButtons(int width) {
         this.soundButton = Utils.createSoundButton();
         this.add(this.soundButton);
 
-        RoundedButton backButton = RoundedButton.createBackButton(width - 135, 12, this);
+        RoundedButton backButton = RoundedButton.createBackButton(width, this);
         this.add(backButton);
 
-        RoundedButton exitButton = RoundedButton.createExitButton(width - 80, 12);
+        RoundedButton exitButton = RoundedButton.createExitButton(width);
         this.add(exitButton);
-
-        this.gameLoop();
     }
 
     public boolean isPaused() {
         return isPaused;
     }
 
-    private void loadLevel(int level) {
-        // איפוס הטיימר ל-60 שניות בכל טעינת שלב
-        this.timeLeft = 60;
-        this.timerCounter = 0;
+    public void stopGame() {
+        this.isGameRunning = false;
 
+        if (this.tickingSound != null) {
+            this.tickingSound.stop();
+        }
+    }
+
+    private void loadLevel(int level) {
+        resetLevelTimer(level);
+        resetPlayerPosition();
+        buildMaze(level);
+        createEnemies(level);
+        createPrizes(level);
+
+        this.isPaused = true;
+        this.isLevelStarting = true;
+    }
+
+    private void resetLevelTimer(int level) {
+        if (this.tickingSound != null) {
+            this.tickingSound.stop();
+        }
+        if (level >= 9 && level <= 15) {
+            this.timeLeft = 90;
+        } else {
+            this.timeLeft = 60;
+        }
+        this.timerCounter = 0;
+    }
+
+    private void resetPlayerPosition() {
         if (this.player == null) {
             this.player = new Player(100, 100, 60, 60);
         } else {
             this.player.setX(100);
             this.player.setY(100);
         }
+    }
 
+    private void buildMaze(int level) {
         int difficultyTier = (level - 1) / 3;
         int mazeTemplate = (level - 1) % 3;
 
-        int amountOfCandies = 5 + (difficultyTier * 3);
-        // תמיד לפחות 3 ירקות רגילים!
-        int normalEnemies = 3 + difficultyTier;
-        int smartEnemies = difficultyTier;
-
         MazeBuilder mazeBuilder = new MazeBuilder();
-        // מעבירים גם את הקושי לבונה המבוכים
-        this.cakes = mazeBuilder.buildMaze(mazeTemplate, Main.WINDOW_WIDTH, Main.WINDOW_HEIGHT, difficultyTier);
+
+        this.cakes = mazeBuilder.buildMaze(
+                mazeTemplate,
+                Main.WINDOW_WIDTH,
+                Main.WINDOW_HEIGHT,
+                difficultyTier
+        );
+
         this.cakesCount = mazeBuilder.getCakesCount();
+    }
 
-        spawnPrizes(amountOfCandies);
+    private void createEnemies(int level) {
+        int difficultyTier = (level - 1) / 3;
 
-        // שולחים למחלקת האויבים גם את התבנית כדי שידעו איפה לחסום
-        setupEnemiesForLevel(normalEnemies, smartEnemies, mazeTemplate);
+        int normalEnemies = 3 + difficultyTier;
+        int smartEnemies = Math.min(difficultyTier, 2);
 
+        setupEnemiesForLevel(normalEnemies, smartEnemies);
+        startEnemiesMovement();
+    }
+
+    private void createPrizes(int level) {
+        int difficultyTier = (level - 1) / 3;
+        int amountOfCandies = 5 + (difficultyTier * 3);
+
+        this.prizes = prizeManager.createPrizes(
+                amountOfCandies,
+                this.cakes,
+                this.cakesCount,
+                this.enemies,
+                this.candyImages
+        );
+    }
+
+    private void startEnemiesMovement() {
         for (int i = 0; i < this.enemies.length; i++) {
             if (this.enemies[i] != null) {
                 this.enemies[i].setIsMoving(true);
             }
         }
-
-        this.isPaused = true;
-        this.isLevelStarting = true;
     }
 
-    // פונקציית רדאר: מוודאת שהאויב לא ייווצר על קיר, על השחקן, או על ירק אחר!
-    private boolean isValidEnemyLocation(int x, int y) {
-        Rectangle enemyRect = new Rectangle(x, y, 46, 46);
-
-        // 1. האם המיקום נופל על עוגה (קיר)?
-        for (int i = 0; i < this.cakesCount; i++) {
-            if (this.cakes[i] != null && enemyRect.intersects(this.cakes[i].getRect())) {
-                return false; // פסול - יש פה עוגה!
-            }
-        }
-
-        // 2. האם המיקום קרוב מדי לשחקן? (ניצור אזור בטוח ענק של 200x200 פיקסלים סביב ההתחלה)
-        Rectangle safeZone = new Rectangle(50, 50, 200, 200);
-        if (enemyRect.intersects(safeZone)) {
-            return false; // פסול - קרוב מדי לשחקן!
-        }
-
-        // 3. --- התיקון החדש: האם המיקום נופל על אויב שכבר הוגרל לפניו? ---
-        if (this.enemies != null) {
-            for (int i = 0; i < this.enemies.length; i++) {
-                if (this.enemies[i] != null && enemyRect.intersects(this.enemies[i].getRect())) {
-                    return false; // פסול - יש פה כבר ירק אחר!
-                }
-            }
-        }
-
-        return true; // המיקום נקי, בטוח ומוכן לשימוש
-    }
-
-    private void setupEnemiesForLevel(int normalEnemies, int smartEnemies, int mazeTemplate) {
+    private void setupEnemiesForLevel(int normalEnemies, int smartEnemies) {
         int totalEnemies = normalEnemies + smartEnemies;
         this.enemies = new Enemy[totalEnemies];
+
         Random random = new Random();
 
         int cols = Main.WINDOW_WIDTH / CAKE_SIZE;
         int rows = Main.WINDOW_HEIGHT / CAKE_SIZE;
 
         for (int i = 0; i < totalEnemies; i++) {
-            int x, y;
+            Point spawnPoint = findEnemySpawnPoint(random, cols, rows);
 
-            // מגרילים מיקומים שוב ושוב עד שהרדאר שלנו מאשר שהמשבצת פנויה
-            do {
-                // מגרילים "משבצת" במבוך (נמנעים מהקצוות הקיצוניים של המסך)
-                int gridX = random.nextInt(cols - 2) + 1;
-                int gridY = random.nextInt(rows - 2) + 1;
-
-                // ממירים את המשבצת לפיקסלים במסך
-                // (הוספנו +2 כדי למרכז אויב של 46x46 בתוך משבצת של 50x50)
-                x = (gridX * CAKE_SIZE) + 2;
-                y = (gridY * CAKE_SIZE) + 2;
-
-            } while (!isValidEnemyLocation(x, y));
-
-            // עכשיו כשיש לנו X ו-Y בטוחים, נייצר את האויב!
             if (i < normalEnemies) {
-                int type = i % 4;
-                if (type == 0) this.enemies[i] = new EnemyBroccoli(x, y, 46, 46);
-                else if (type == 1) this.enemies[i] = new EnemyEggplant(x, y, 46, 46);
-                else if (type == 2) this.enemies[i] = new EnemyGeneric(x, y, 46, 46, "Carrot");
-                else this.enemies[i] = new EnemyGeneric(x, y, 46, 46, "Corn");
+                createRegularEnemy(i, spawnPoint.x, spawnPoint.y);
             } else {
-                // הגמבה החכמה נוצרת אחרונה
-                this.enemies[i] = new EnemyBellPepper(x, y, 46, 46, this.player);
+                this.enemies[i] = new EnemyBellPepper(
+                        spawnPoint.x,
+                        spawnPoint.y,
+                        ENEMY_SIZE,
+                        ENEMY_SIZE,
+                        this.player
+                );
             }
         }
     }
 
+    private Point findEnemySpawnPoint(Random random, int cols, int rows) {
+        int x;
+        int y;
 
-    private void spawnPrizes(int amount) {
-        prizes = new Prize[amount];
-        Random random = new Random();
+        do {
+            int gridX = random.nextInt(cols - 2) + 1;
+            int gridY = random.nextInt(rows - 2) + 1;
 
-        int safeMargin = 20;
-        int minX = 90 + safeMargin;
-        int maxX = Main.WINDOW_WIDTH - 48 - 15 - safeMargin;
-        int minY = 35 + safeMargin;
-        int maxY = Main.WINDOW_HEIGHT - 50 - 36 - safeMargin;
+            x = (gridX * CAKE_SIZE) + 2;
+            y = (gridY * CAKE_SIZE) + 2;
 
-        for (int i = 0; i < prizes.length; i++) {
-            int x, y;
-            do {
-                x = random.nextInt(maxX - minX) + minX;
-                y = random.nextInt(maxY - minY) + minY;
-            } while (!isValidPrizeLocation(x, y, i));
+        } while (!isValidEnemyLocation(x, y));
 
-            String randomCandy = candyImages[random.nextInt(candyImages.length)];
-            prizes[i] = new Prize(x, y, 15, 36, randomCandy);
-        }
+        return new Point(x, y);
     }
 
-    private boolean isValidPrizeLocation(int x, int y, int currentPrizeIndex) {
-        Rectangle tempPrizeRect = new Rectangle(x, y, 15, 36);
+    private boolean isValidEnemyLocation(int x, int y) {
+        Rectangle enemyRect = new Rectangle(x, y, ENEMY_SIZE, ENEMY_SIZE);
 
-        for (int j = 0; j < cakesCount; j++) {
-            if (cakes[j] != null && tempPrizeRect.intersects(cakes[j].getRect())) {
-                return false;
+        if (touchesCake(enemyRect)) {
+            return false;
+        }
+
+        Rectangle safeZone = new Rectangle(50, 50, 200, 200);
+
+        if (enemyRect.intersects(safeZone)) {
+            return false;
+        }
+
+        return !touchesOtherEnemy(enemyRect);
+    }
+
+    private boolean touchesCake(Rectangle rect) {
+        for (int i = 0; i < this.cakesCount; i++) {
+            if (this.cakes[i] != null && rect.intersects(this.cakes[i].getRect())) {
+                return true;
             }
         }
 
-        int padding = 40;
-        Rectangle safeZone = new Rectangle(x - padding, y - padding, 15 + (padding * 2), 36 + (padding * 2));
+        return false;
+    }
 
-        for (int k = 0; k < currentPrizeIndex; k++) {
-            if (prizes[k] != null && safeZone.intersects(prizes[k].getBounds())) {
-                return false;
+    private boolean touchesOtherEnemy(Rectangle enemyRect) {
+        if (this.enemies == null) {
+            return false;
+        }
+
+        for (int i = 0; i < this.enemies.length; i++) {
+            if (this.enemies[i] != null && enemyRect.intersects(this.enemies[i].getRect())) {
+                return true;
             }
         }
-        return true;
+
+        return false;
+    }
+
+    private void createRegularEnemy(int index, int x, int y) {
+        int type = index % 4;
+
+        if (type == 0) {
+            this.enemies[index] = new EnemyBroccoli(x, y, ENEMY_SIZE, ENEMY_SIZE);
+        } else if (type == 1) {
+            this.enemies[index] = new EnemyEggplant(x, y, ENEMY_SIZE, ENEMY_SIZE);
+        } else if (type == 2) {
+            this.enemies[index] = new EnemyGeneric(x, y, ENEMY_SIZE, ENEMY_SIZE, "Carrot");
+        } else {
+            this.enemies[index] = new EnemyGeneric(x, y, ENEMY_SIZE, ENEMY_SIZE, "Corn");
+        }
     }
 
     public boolean checkCakeCollision() {
         Rectangle characterRect = this.player.getRect();
-        int padLeft = 14;
-        int padRight = 14;
-        int padTop = 22;
-        int padBottom = 5;
 
         Rectangle smallCharacterRect = new Rectangle(
-                characterRect.x + padLeft,
-                characterRect.y + padTop,
-                characterRect.width - (padLeft + padRight),
-                characterRect.height - (padTop + padBottom)
+                characterRect.x + 14,
+                characterRect.y + 22,
+                characterRect.width - 28,
+                characterRect.height - 27
         );
 
         for (int i = 0; i < this.cakesCount; i++) {
             Cake currentCake = this.cakes[i];
+
             if (currentCake != null) {
                 Rectangle cakeRect = currentCake.getRect();
 
-                int cakePadding = 4;
                 Rectangle smallCakeRect = new Rectangle(
-                        cakeRect.x + cakePadding,
-                        cakeRect.y + cakePadding,
-                        cakeRect.width - (cakePadding * 2),
-                        cakeRect.height - (cakePadding * 2)
+                        cakeRect.x + 4,
+                        cakeRect.y + 4,
+                        cakeRect.width - 8,
+                        cakeRect.height - 8
                 );
 
                 if (smallCharacterRect.intersects(smallCakeRect)) {
@@ -269,26 +330,298 @@ public class MainScenePanel extends JPanel {
                 }
             }
         }
+
         return false;
     }
 
+    public void checkPrizeCollisions() {
+        Rectangle playerHitbox = getPlayerPrizeHitbox();
+
+        boolean allCollected = true;
+
+        if (prizes != null) {
+            for (int i = 0; i < prizes.length; i++) {
+                if (prizes[i] != null && !prizes[i].isCollected()) {
+                    if (playerHitbox.intersects(prizes[i].getBounds())) {
+                        collectPrize(prizes[i]);
+                    } else {
+                        allCollected = false;
+                    }
+                }
+            }
+        }
+
+        if (allCollected && prizes != null && prizes.length > 0) {
+            repaint();//מצייר את המסך מחדש ללא הסוכריה האחרונה
+            Utils.sleep(100);//מחכה עשירית שנייה לפני שעוברים הלאה
+            goToNextLevel();
+
+        }
+    }
+
+    private Rectangle getPlayerPrizeHitbox() {
+        int padding = 22;
+
+        return new Rectangle(
+                player.getX() + padding,
+                player.getY() + padding,
+                player.getWidth() - padding * 2,
+                player.getHeight() - padding * 2
+        );
+    }
+
+    private void collectPrize(Prize prize) {
+        prize.setCollected(true);
+        this.score += prize.getPoints();
+        playSound("/Sweet_Reward.wav");
+    }
+
+    private void goToNextLevel() {
+        currentLevel++;
+
+        if (currentLevel <= MAX_LEVELS) {
+            GameProgress.unlockLevel(currentLevel);
+        }
+
+        if (currentLevel > MAX_LEVELS) {
+            handleVictory();
+        } else {
+            loadLevel(currentLevel);
+        }
+    }
+
+    private void handleVictory() {
+        stopGame();
+
+        Utils.stopMusic();
+        playSound("/Victory_sound.wav");
+
+        ImageIcon originalIcon = new ImageIcon(getClass().getResource("/TrophyIcon.png"));
+        Image scaledImage = originalIcon.getImage().getScaledInstance(60, 60, Image.SCALE_SMOOTH);
+        ImageIcon trophyIcon = new ImageIcon(scaledImage);
+
+        // הגדרת הרקע ללבן נקי
+        UIManager.put("OptionPane.background", Color.WHITE);
+        UIManager.put("Panel.background", Color.WHITE);
+
+        JOptionPane pane = new JOptionPane(
+                "ניצחת במשחק! כל הכבוד!\nהניקוד שלך: " + this.score,
+                JOptionPane.PLAIN_MESSAGE,
+                JOptionPane.DEFAULT_OPTION,
+                trophyIcon
+        );
+
+        Window parentWindow = SwingUtilities.windowForComponent(this);
+        JDialog dialog = new JDialog(parentWindow, "Victory", Dialog.ModalityType.APPLICATION_MODAL);
+
+        dialog.setUndecorated(true);
+        dialog.getRootPane().setBorder(BorderFactory.createLineBorder(new Color(144, 238, 144), 8));
+
+        dialog.setContentPane(pane);
+        dialog.pack();
+        dialog.setLocationRelativeTo(parentWindow);
+        dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+
+        // מאזין שמחכה שהשחקן ילחץ על הכפתור כדי לסגור את החלון
+        pane.addPropertyChangeListener(e -> {
+            if (JOptionPane.VALUE_PROPERTY.equals(e.getPropertyName())) {
+                dialog.dispose();
+            }
+        });
+
+        dialog.setVisible(true);
+
+        System.exit(0);
+    }
+
+    public void gameLoop() {
+        new Thread(() -> {
+            while (isGameRunning) {
+                if (!isPaused) {
+                    if (!updateEnemies()) {
+                        stopGame();
+                        return;
+                    }
+
+                    checkPrizeCollisions();
+
+                    if (!updateTimer()) {
+                        stopGame();
+                        return;
+                    }
+                }
+
+                repaint();
+                Utils.sleep(16);
+            }
+        }).start();
+    }
+
+    private boolean updateEnemies() {
+        for (int i = 0; i < this.enemies.length; i++) {
+            if (this.enemies[i] == null) {
+                continue;
+            }
+
+            int oldX = this.enemies[i].getX();
+            int oldY = this.enemies[i].getY();
+
+            this.enemies[i].move();
+
+            if (enemyHitObstacle(i)) {
+                moveEnemyBack(i, oldX, oldY);
+            }
+
+            if (checkCollision(this.player, this.enemies[i])) {
+                return handleGameOver("אוי לא! נתפסת על ידי הירקות!", "Game Over");
+            }
+        }
+
+        return true;
+    }
+
+    private boolean enemyHitObstacle(int enemyIndex) {
+        if (checkEnemyCakeCollision(this.enemies[enemyIndex])) {
+            return true;
+        }
+
+        for (int i = 0; i < this.enemies.length; i++) {
+            if (i != enemyIndex &&
+                    this.enemies[i] != null &&
+                    checkEnemyCollision(this.enemies[enemyIndex], this.enemies[i])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void moveEnemyBack(int enemyIndex, int oldX, int oldY) {
+        this.enemies[enemyIndex].setX(oldX);
+        this.enemies[enemyIndex].setY(oldY);
+        this.enemies[enemyIndex].reverseDirection();
+
+        if (this.enemies[enemyIndex] instanceof EnemyBellPepper) {
+            ((EnemyBellPepper) this.enemies[enemyIndex]).suspendTracking(40);
+        }
+    }
+
+    private boolean updateTimer() {
+        timerCounter++;
+
+        if (timerCounter >= 60) {
+            timeLeft--;
+            timerCounter = 0;
+
+            if (timeLeft == 10 && this.tickingSound != null) {
+                this.tickingSound.playLoop();
+            }
+
+            if (timeLeft <= 0) {
+                timeLeft = 0;
+                repaint();
+
+                return handleGameOver("אוי לא! הזמן אזל אנא נסה שנית.", "Time's Up");
+            }
+        }
+
+        return true;
+    }
+
+    private boolean handleGameOver(String message, String title) {
+        Utils.stopMusic();
+
+        if (this.tickingSound != null) {
+            this.tickingSound.stop();
+        }
+
+        playSound("/Losing_sound.wav");
+
+        Object[] options = {"Restart Level", "Back to Menu"};
+
+        ImageIcon originalIcon = new ImageIcon(getClass().getResource("/BellPepper_Front.png"));
+        Image scaledImage = originalIcon.getImage().getScaledInstance(60, 60, Image.SCALE_SMOOTH);
+        ImageIcon pepperIcon = new ImageIcon(scaledImage);
+        UIManager.put("OptionPane.background", Color.WHITE);
+        UIManager.put("Panel.background", Color.WHITE);
+
+        JOptionPane pane = new JOptionPane(
+                message + "\nהניקוד שלך: " + this.score,
+                JOptionPane.PLAIN_MESSAGE,
+                JOptionPane.YES_NO_OPTION,
+                pepperIcon,
+                options,
+                options[0]
+        );
+
+        Window parentWindow = SwingUtilities.windowForComponent(this);
+        JDialog dialog = new JDialog(parentWindow, title, Dialog.ModalityType.APPLICATION_MODAL);
+
+        dialog.setUndecorated(true);
+        dialog.getRootPane().setBorder(BorderFactory.createLineBorder(Color.RED, 8));
+
+        dialog.setContentPane(pane);
+        dialog.pack();
+        dialog.setLocationRelativeTo(parentWindow);
+        dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+        // מאזין שמחכה שהשחקן ילחץ על אחד הכפתורים כדי לסגור את החלון
+        pane.addPropertyChangeListener(e -> {
+            if (JOptionPane.VALUE_PROPERTY.equals(e.getPropertyName())) {
+                dialog.dispose();
+            }
+        });
+        dialog.setVisible(true);
+
+        Object selectedValue = pane.getValue();
+
+        if (selectedValue != null && selectedValue.equals(options[0])) {
+            this.score = 0;
+            loadLevel(this.currentLevel);
+
+            Utils.playMusic();
+            Utils.syncButtonIcon(this.soundButton);
+
+            return true;
+        }else {
+            Utils.playMusic();
+
+            if (parentWindow != null) {
+                parentWindow.dispose();
+            }
+            new MainMenu();
+            return false;
+        }
+    }
+
+    private void closeWindowAndOpenMenu() {
+        Window parentWindow = SwingUtilities.windowForComponent(this);
+
+        if (parentWindow != null) {
+            parentWindow.dispose();
+        }
+
+        new MainMenu();
+    }
+
     private boolean checkCollision(Player player, Enemy enemy) {
-        // מגלחים 15 פיקסלים מכל צד של השחקן כדי להתעלם מהרקע השקוף
         int playerPadding = 15;
+
         Rectangle playerHitbox = new Rectangle(
                 player.getX() + playerPadding,
                 player.getY() + playerPadding,
-                player.getWidth() - (playerPadding * 2),
-                player.getHeight() - (playerPadding * 2)
+                player.getWidth() - playerPadding * 2,
+                player.getHeight() - playerPadding * 2
         );
-        // מגלחים 10 פיקסלים מכל צד של הירק
+
         int enemyPadding = 10;
+
         Rectangle enemyHitbox = new Rectangle(
                 enemy.getX() + enemyPadding,
                 enemy.getY() + enemyPadding,
-                enemy.getWidth() - (enemyPadding * 2),
-                enemy.getHeight() - (enemyPadding * 2)
+                enemy.getWidth() - enemyPadding * 2,
+                enemy.getHeight() - enemyPadding * 2
         );
+
         return playerHitbox.intersects(enemyHitbox);
     }
 
@@ -301,211 +634,42 @@ public class MainScenePanel extends JPanel {
 
     private boolean checkEnemyCakeCollision(Enemy enemy) {
         Rectangle enemyRect = enemy.getRect();
+
         for (int i = 0; i < this.cakesCount; i++) {
-            if (cakes[i] != null) {
-                if (enemyRect.intersects(cakes[i].getRect())) {
-                    return true;
-                }
+            if (cakes[i] != null && enemyRect.intersects(cakes[i].getRect())) {
+                return true;
             }
         }
+
         return false;
     }
-
-    public void checkPrizeCollisions() {
-        // --- השינוי שלך: "מגלחים" 15 פיקסלים מהשחקן כדי שייגע בסוכריה רק כשהוא ממש עליה פיזית ---
-        int padding = 15;
-        Rectangle playerHitbox = new Rectangle(
-                player.getX() + padding,
-                player.getY() + padding,
-                player.getWidth() - (padding * 2),
-                player.getHeight() - (padding * 2)
-        );
-
-        boolean allCollected = true;
-
-        if (prizes != null) {
-            for (int i = 0; i < prizes.length; i++) {
-                if (prizes[i] != null && !prizes[i].isCollected()) {
-
-                    // משתמשים במלבן המגולח שלך לבדיקה
-                    if (playerHitbox.intersects(prizes[i].getBounds())) {
-                        prizes[i].setCollected(true);
-                        this.score += 10;
-
-                        // --- השינוי של החבר: השמעת צליל בעת איסוף סוכריה ---
-                        playSound("/Sweet_Reward.wav");
-
-                    } else {
-                        allCollected = false;
-                    }
-                }
-            }
-        }
-
-        // --- לוגיקת סיום השלב (זהה אצל שניכם) ---
-        if (allCollected && prizes != null && prizes.length > 0) {
-            currentLevel++;
-            if (currentLevel > MAX_LEVELS) {
-                Utils.stopMusic();
-                playSound("/Victory_sound.wav");
-
-                ImageIcon originalIcon = new ImageIcon(getClass().getResource("/Trophy_Icon.png"));
-                Image scaledImage = originalIcon.getImage().getScaledInstance(60, 60, Image.SCALE_SMOOTH);
-                ImageIcon TrophyIcon = new ImageIcon(scaledImage);
-
-                JOptionPane.showMessageDialog(null,  "ניצחת במשחק! כל הכבוד!" + "\nהניקוד שלך: " + this.score, "Victory", JOptionPane.PLAIN_MESSAGE, TrophyIcon);
-                System.exit(0);
-            } else {
-                loadLevel(currentLevel);
-            }
-        }
-    }
-
-    public void gameLoop() {
-        new Thread(() -> {
-            while (true) {
-                if (!isPaused) {
-                    // אם פונקציית העזר מחזירה false, אנחנו הורגים את ה-Thread!
-                    if (!updateEnemies()) return;
-
-                    checkPrizeCollisions();
-
-                    if (!updateTimer()) return;
-                }
-                repaint();
-                Utils.sleep(16);
-            }
-        }).start();
-    }
-
-    private boolean updateEnemies() {
-        for (int i = 0; i < this.enemies.length; i++) {
-            if (this.enemies[i] == null) continue;
-
-            int oldX = this.enemies[i].getX();
-            int oldY = this.enemies[i].getY();
-
-            this.enemies[i].move();
-
-            // בדיקה אם האויב נתקע בקיר או באויב אחר
-            boolean hitSomething = checkEnemyCakeCollision(this.enemies[i]);
-            if (!hitSomething) {
-                for (int j = 0; j < this.enemies.length; j++) {
-                    if (i != j && this.enemies[j] != null && checkEnemyCollision(this.enemies[i], this.enemies[j])) {
-                        hitSomething = true;
-                        break;
-                    }
-                }
-            }
-
-            // אם האויב נתקע - נחזיר אותו אחורה ונהפוך לו כיוון
-            if (hitSomething) {
-                this.enemies[i].setX(oldX);
-                this.enemies[i].setY(oldY);
-                this.enemies[i].reverseDirection();
-
-                if (this.enemies[i] instanceof EnemyBellPepper) {
-                    ((EnemyBellPepper) this.enemies[i]).suspendTracking(40); // הגמבה תברח הצידה ל-40 פריימים
-                }
-            }
-
-            // --- בדיקת פסילה ---
-            if (checkCollision(this.player, this.enemies[i])) {
-                // קוראים לפונקציית ה-GameOver הכללית, והיא מחזירה אם להמשיך או לצאת
-                return handleGameOver("אוי לא! נתפסת על ידי הירקות!", "Game Over");
-            }
-        }
-        return true; // הכל תקין, אפשר להמשיך את הלולאה
-    }
-
-    private boolean updateTimer() {
-        timerCounter++;
-        if (timerCounter >= 60) { // עברה בערך שנייה אחת
-            timeLeft--; // מורידים שנייה מהטיימר
-            timerCounter = 0; // מאפסים את המונה לשנייה הבאה
-
-            // מה קורה כשנגמר הזמן?
-            if (timeLeft <= 0) {
-                timeLeft = 0; // מוודאים שהזמן לא יורד בטעות מתחת לאפס
-
-                // --- התיקון שלנו: כופים על המסך להתרענן מיד כדי שהשחקן יראה 00:00 ---
-                repaint();
-                // -------------------------------------------------------------------
-
-                return handleGameOver("אוי לא! הזמן אזל אנא נסה שנית.", "Time's Up");
-            }
-        }
-        return true; // יש עוד זמן, הכל תקין
-    }
-
-    private boolean handleGameOver(String message, String title) {
-        Utils.stopMusic();
-        // --- כאן אנחנו מנגנים את צליל ההפסד מיד כשמופעלת הפסילה ---
-        playSound("/Losing_sound.wav");
-        // -----------------------------------------------------------
-
-        Object[] options = {"Restart Level", "Back to Menu"};
-
-        ImageIcon originalIcon = new ImageIcon(getClass().getResource("/BellPepper_Front.png"));
-        Image scaledImage = originalIcon.getImage().getScaledInstance(60, 60, Image.SCALE_SMOOTH);
-        ImageIcon pepperIcon = new ImageIcon(scaledImage);
-
-        JOptionPane pane = new JOptionPane(
-                message + "\nהניקוד שלך: " + this.score,
-                JOptionPane.PLAIN_MESSAGE,
-                JOptionPane.YES_NO_OPTION,
-                pepperIcon,
-                options,
-                options[0]
-        );
-
-        JDialog dialog = pane.createDialog(SwingUtilities.windowForComponent(this), title);
-        dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
-        dialog.setVisible(true);
-
-        Object selectedValue = pane.getValue();
-
-        if (selectedValue != null && selectedValue.equals(options[0])) {
-            // --- לחצו על Restart Level ---
-            this.score = 0;
-            loadLevel(this.currentLevel);
-
-            Utils.playMusic(); // 1. מפעילים את המוזיקה הכללית
-            Utils.syncButtonIcon(this.soundButton); // 2. מעדכנים את תמונת הרמקול שעל המסך
-
-            return true;
-        } else {
-            // --- לחצו על Back to Menu ---
-            Utils.playMusic(); // מפעילים את המוזיקה לפני המעבר כדי שתמשיך לתפריט
-
-            Window parentWindow = SwingUtilities.windowForComponent(this);
-            if (parentWindow != null) {
-                parentWindow.dispose();
-            }
-            new MainMenu(); // התפריט ייפתח ויטען את הכפתור כשהוא כבר מסונכרן ודלוק
-            return false;
-        }
-    }
-
 
     @Override
     public void paintComponent(Graphics graphics) {
         super.paintComponent(graphics);
 
+        drawGameObjects(graphics);
+        drawHud(graphics);
+        drawPauseOverlay(graphics);
+    }
+
+    private void drawGameObjects(Graphics graphics) {
         if (this.levelsBackground != null) {
             this.levelsBackground.paint(graphics, this.getWidth(), this.getHeight());
         }
 
-        for (int i = 0; i < this.enemies.length; i++) {
-            if (this.enemies[i] != null) {
-                this.enemies[i].paint(graphics);
+        if (this.enemies != null) {
+            for (int i = 0; i < this.enemies.length; i++) {
+                if (this.enemies[i] != null) {
+                    this.enemies[i].paint(graphics);
+                }
             }
         }
 
-        if (cakes != null) {
+        if (this.cakes != null) {
             for (int i = 0; i < cakesCount; i++) {
-                if (cakes[i] != null) {
-                    cakes[i].paint(graphics);
+                if (this.cakes[i] != null) {
+                    this.cakes[i].paint(graphics);
                 }
             }
         }
@@ -514,14 +678,16 @@ public class MainScenePanel extends JPanel {
             this.player.paint(graphics, this.isPaused);
         }
 
-        if (prizes != null) {
+        if (this.prizes != null) {
             for (int i = 0; i < prizes.length; i++) {
                 if (prizes[i] != null && !prizes[i].isCollected()) {
                     prizes[i].draw(graphics);
                 }
             }
         }
+    }
 
+    private void drawHud(Graphics graphics) {
         int buttonX = 20;
         int buttonWidth = 50;
         int scoreX = buttonX + buttonWidth + 10;
@@ -529,68 +695,88 @@ public class MainScenePanel extends JPanel {
 
         graphics.setFont(new Font("Arial", Font.BOLD, 30));
 
-        graphics.setColor(Color.BLACK);
-        graphics.drawString("Score: " + this.score, scoreX + 2, scoreY + 2);
-        graphics.setColor(new Color(180, 140, 207));
-        graphics.drawString("Score: " + this.score, scoreX, scoreY);
+        drawTextWithShadow(
+                graphics,
+                "Score: " + this.score,
+                scoreX,
+                scoreY,
+                new Color(180, 140, 207)
+        );
 
-        graphics.setColor(Color.BLACK);
-        graphics.drawString("Level: " + this.currentLevel, scoreX + 202, scoreY + 2);
-        graphics.setColor(new Color(255, 180, 193));
-        graphics.drawString("Level: " + this.currentLevel, scoreX + 200, scoreY);
+        drawTextWithShadow(
+                graphics,
+                "Level: " + this.currentLevel,
+                scoreX + 200,
+                scoreY,
+                new Color(180, 244, 255)
+        );
 
-        // --- ציור הטיימר ---
-        // חישוב דקות ושניות כדי להציג בפורמט של 01:30
-        int minutes = this.timeLeft / 60;
-        int seconds = this.timeLeft % 60;
-        // String.format מאפשר לנו להוסיף אפס מוביל אם המספר קטן מ-10
-        String timeString = String.format("Time: %02d:%02d", minutes, seconds);
+        String timeString = getTimeString();
 
-        graphics.setColor(Color.BLACK);
-        graphics.drawString(timeString, scoreX + 402, scoreY + 2);
+        Color timerColor = Color.WHITE;
 
-        // נשנה את הצבע לאדום כשנשארות 10 שניות או פחות כדי להלחיץ את השחקן!
         if (this.timeLeft <= 10) {
-            graphics.setColor(Color.RED);
-        } else {
-            graphics.setColor(Color.WHITE);
+            timerColor = Color.RED;
         }
-        graphics.drawString(timeString, scoreX + 400, scoreY);
 
-        if (isPaused) {
-            graphics.setColor(new Color(0, 0, 0, 200));
-            graphics.fillRect(0, 0, getWidth(), getHeight());
-
-            graphics.setColor(Color.WHITE);
-
-            String text;
-            if (isLevelStarting) {
-                // אם זה תחילת שלב
-                graphics.setFont(new Font("Arial", Font.BOLD, 40));
-                text = "PRESS SPACE TO START";
-            } else {
-                // אם זו עצירה רגילה
-                graphics.setFont(new Font("Arial", Font.BOLD, 60));
-                text = "PAUSED";
-            }
-
-            int x = (getWidth() - graphics.getFontMetrics().stringWidth(text)) / 2;
-            int y = getHeight() / 2;
-
-            graphics.drawString(text, x, y);
-        }
+        drawTextWithShadow(
+                graphics,
+                timeString,
+                scoreX + 400,
+                scoreY,
+                timerColor
+        );
     }
 
-    // פונקציה זו טוענת קובץ סאונד מתיקיית המשאבים ומנגנת אותו
+    private void drawTextWithShadow(Graphics graphics, String text, int x, int y, Color color) {
+        graphics.setColor(Color.BLACK);
+        graphics.drawString(text, x + 2, y + 2);
+
+        graphics.setColor(color);
+        graphics.drawString(text, x, y);
+    }
+
+    private String getTimeString() {
+        int minutes = this.timeLeft / 60;
+        int seconds = this.timeLeft % 60;
+
+        return String.format("Time: %02d:%02d", minutes, seconds);
+    }
+
+    private void drawPauseOverlay(Graphics graphics) {
+        if (!isPaused) {
+            return;
+        }
+
+        graphics.setColor(new Color(0, 0, 0, 200));
+        graphics.fillRect(0, 0, getWidth(), getHeight());
+
+        graphics.setColor(Color.WHITE);
+
+        String text;
+
+        if (isLevelStarting) {
+            graphics.setFont(new Font("Arial", Font.BOLD, 40));
+            text = "PRESS SPACE TO START";
+        } else {
+            graphics.setFont(new Font("Arial", Font.BOLD, 60));
+            text = "PAUSED";
+        }
+
+        int x = (getWidth() - graphics.getFontMetrics().stringWidth(text)) / 2;
+        int y = getHeight() / 2;
+
+        graphics.drawString(text, x, y);
+    }
+
     private void playSound(String soundFileName) {
         try {
-            // חיפוש הקובץ בנתיב שציינו
             URL soundURL = getClass().getResource(soundFileName);
 
             if (soundURL != null) {
-                // פתיחת ערוץ שמע וניגון הקליפ
                 AudioInputStream audioIn = AudioSystem.getAudioInputStream(soundURL);
                 Clip clip = AudioSystem.getClip();
+
                 clip.open(audioIn);
                 clip.start();
             } else {

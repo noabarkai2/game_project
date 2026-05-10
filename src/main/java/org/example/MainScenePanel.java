@@ -40,6 +40,7 @@ public class MainScenePanel extends JPanel {
         this(x, y, width, height, 1);
     }
 
+    // בנאי שמפעיל את המשחק משלב שנבחר במפת השלבים
     public MainScenePanel(int x, int y, int width, int height, int startLevel) {
         this.currentLevel = startLevel;
 
@@ -56,6 +57,7 @@ public class MainScenePanel extends JPanel {
         this.gameLoop();
     }
 
+    // מאתחל את מערך התמונות של הסוכריות הרגילות
     private void initializeImages() {
         this.candyImages = new String[]{
                 "/Blue_candy.png",
@@ -66,6 +68,7 @@ public class MainScenePanel extends JPanel {
         };
     }
 
+    // מאתחל את הפאנל, הרקע, הסאונד והגדרות הבסיס של המסך
     private void initializePanel(int x, int y, int width, int height) {
         this.tickingSound = new SoundManager("/Clock_sound.wav");
         this.prizeManager = new PrizeManager();
@@ -78,6 +81,7 @@ public class MainScenePanel extends JPanel {
         this.requestFocus();
     }
 
+    // מאזין ללחיצה על רווח כדי להתחיל שלב או לעצור משחק
     private void initializeKeyListener() {
         this.addKeyListener(new KeyAdapter() {
             @Override
@@ -90,6 +94,7 @@ public class MainScenePanel extends JPanel {
         });
     }
 
+    // מחליף בין מצב עצירה למצב משחק פעיל
     private void togglePause() {
         if (isLevelStarting) {
             isLevelStarting = false;
@@ -99,11 +104,13 @@ public class MainScenePanel extends JPanel {
         }
     }
 
+    // מוסיף מאזין תנועה לשחקן
     private void initializeMovementListener() {
         MovementListener movementListener = new MovementListener(this, this.player);
         this.addKeyListener(movementListener);
     }
 
+    // מוסיף למסך כפתור סאונד, חזרה ויציאה
     private void initializeButtons(int width) {
         this.soundButton = Utils.createSoundButton();
         this.add(this.soundButton);
@@ -115,10 +122,12 @@ public class MainScenePanel extends JPanel {
         this.add(exitButton);
     }
 
+    // מחזיר האם המשחק כרגע במצב עצירה
     public boolean isPaused() {
         return isPaused;
     }
 
+    // עוצר את לולאת המשחק ואת צליל הטיימר
     public void stopGame() {
         this.isGameRunning = false;
 
@@ -127,6 +136,7 @@ public class MainScenePanel extends JPanel {
         }
     }
 
+    // טוען שלב חדש ומאתחל שחקן, מבוך, אויבים ופרסים
     private void loadLevel(int level) {
         resetLevelTimer(level);
         resetPlayerPosition();
@@ -138,18 +148,22 @@ public class MainScenePanel extends JPanel {
         this.isLevelStarting = true;
     }
 
+    // מאפס את הטיימר לפי מספר השלב
     private void resetLevelTimer(int level) {
         if (this.tickingSound != null) {
             this.tickingSound.stop();
         }
+
         if (level >= 9 && level <= 15) {
             this.timeLeft = 90;
         } else {
             this.timeLeft = 60;
         }
+
         this.timerCounter = 0;
     }
 
+    // מחזיר את השחקן לנקודת ההתחלה
     private void resetPlayerPosition() {
         if (this.player == null) {
             this.player = new Player(100, 100, 60, 60);
@@ -159,6 +173,7 @@ public class MainScenePanel extends JPanel {
         }
     }
 
+    // בונה את המבוך לפי השלב ורמת הקושי
     private void buildMaze(int level) {
         int difficultyTier = (level - 1) / 3;
         int mazeTemplate = (level - 1) % 3;
@@ -175,17 +190,18 @@ public class MainScenePanel extends JPanel {
         this.cakesCount = mazeBuilder.getCakesCount();
     }
 
+    // יוצר אויבים לפי רמת הקושי של השלב
     private void createEnemies(int level) {
         int difficultyTier = (level - 1) / 3;
 
         int normalEnemies = 3 + difficultyTier;
-        int smartEnemies = 2;
-//        int smartEnemies = Math.min(difficultyTier, 2);
+        int smartEnemies = Math.min(difficultyTier,2);
 
         setupEnemiesForLevel(normalEnemies, smartEnemies);
         startEnemiesMovement();
     }
 
+    // יוצר סוכריות רגילות וסוכריה מיוחדת בשלב
     private void createPrizes(int level) {
         int difficultyTier = (level - 1) / 3;
         int amountOfCandies = 5 + (difficultyTier * 3);
@@ -199,6 +215,7 @@ public class MainScenePanel extends JPanel {
         );
     }
 
+    // מפעיל תנועה לכל האויבים שנוצרו
     private void startEnemiesMovement() {
         for (int i = 0; i < this.enemies.length; i++) {
             if (this.enemies[i] != null) {
@@ -207,6 +224,7 @@ public class MainScenePanel extends JPanel {
         }
     }
 
+    // בונה את מערך האויבים וממקם אותם במקומות תקינים
     private void setupEnemiesForLevel(int normalEnemies, int smartEnemies) {
         int totalEnemies = normalEnemies + smartEnemies;
         this.enemies = new Enemy[totalEnemies];
@@ -233,6 +251,7 @@ public class MainScenePanel extends JPanel {
         }
     }
 
+    // מחפש נקודת התחלה תקינה לאויב
     private Point findEnemySpawnPoint(Random random, int cols, int rows) {
         int x;
         int y;
@@ -249,6 +268,7 @@ public class MainScenePanel extends JPanel {
         return new Point(x, y);
     }
 
+    // בודק אם מיקום האויב פנוי מעוגות, שחקן ואויבים אחרים
     private boolean isValidEnemyLocation(int x, int y) {
         Rectangle enemyRect = new Rectangle(x, y, ENEMY_SIZE, ENEMY_SIZE);
 
@@ -265,6 +285,7 @@ public class MainScenePanel extends JPanel {
         return !touchesOtherEnemy(enemyRect);
     }
 
+    // בודק אם מלבן מסוים נוגע בעוגה
     private boolean touchesCake(Rectangle rect) {
         for (int i = 0; i < this.cakesCount; i++) {
             if (this.cakes[i] != null && rect.intersects(this.cakes[i].getRect())) {
@@ -275,6 +296,7 @@ public class MainScenePanel extends JPanel {
         return false;
     }
 
+    // בודק אם מלבן האויב נוגע באויב אחר
     private boolean touchesOtherEnemy(Rectangle enemyRect) {
         if (this.enemies == null) {
             return false;
@@ -289,6 +311,7 @@ public class MainScenePanel extends JPanel {
         return false;
     }
 
+    // יוצר אויב רגיל לפי סוג משתנה
     private void createRegularEnemy(int index, int x, int y) {
         int type = index % 4;
 
@@ -303,6 +326,7 @@ public class MainScenePanel extends JPanel {
         }
     }
 
+    // בודק אם השחקן נוגע בעוגה כדי למנוע מעבר דרך קירות
     public boolean checkCakeCollision() {
         Rectangle characterRect = this.player.getRect();
 
@@ -335,6 +359,7 @@ public class MainScenePanel extends JPanel {
         return false;
     }
 
+    // בודק איסוף סוכריות ומעבר לשלב הבא
     public void checkPrizeCollisions() {
         Rectangle playerHitbox = getPlayerPrizeHitbox();
 
@@ -353,13 +378,13 @@ public class MainScenePanel extends JPanel {
         }
 
         if (allCollected && prizes != null && prizes.length > 0) {
-            repaint();//מצייר את המסך מחדש ללא הסוכריה האחרונה
-            Utils.sleep(100);//מחכה עשירית שנייה לפני שעוברים הלאה
+            repaint();
+            Utils.sleep(100);
             goToNextLevel();
-
         }
     }
 
+    // יוצר מלבן פגיעה קטן יותר לשחקן בזמן איסוף סוכריות
     private Rectangle getPlayerPrizeHitbox() {
         int padding = 22;
 
@@ -371,12 +396,14 @@ public class MainScenePanel extends JPanel {
         );
     }
 
+    // מסמן סוכריה כנאספה, מוסיף ניקוד ומשמיע צליל
     private void collectPrize(Prize prize) {
         prize.setCollected(true);
         this.score += prize.getPoints();
         playSound("/Sweet_Reward.wav");
     }
 
+    // עובר לשלב הבא או מפעיל ניצחון בסיום המשחק
     private void goToNextLevel() {
         currentLevel++;
 
@@ -391,6 +418,7 @@ public class MainScenePanel extends JPanel {
         }
     }
 
+    // מציג חלון ניצחון ומסיים את המשחק
     private void handleVictory() {
         stopGame();
 
@@ -401,7 +429,6 @@ public class MainScenePanel extends JPanel {
         Image scaledImage = originalIcon.getImage().getScaledInstance(60, 60, Image.SCALE_SMOOTH);
         ImageIcon trophyIcon = new ImageIcon(scaledImage);
 
-        // הגדרת הרקע ללבן נקי
         UIManager.put("OptionPane.background", Color.WHITE);
         UIManager.put("Panel.background", Color.WHITE);
 
@@ -423,7 +450,6 @@ public class MainScenePanel extends JPanel {
         dialog.setLocationRelativeTo(parentWindow);
         dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
 
-        // מאזין שמחכה שהשחקן ילחץ על הכפתור כדי לסגור את החלון
         pane.addPropertyChangeListener(e -> {
             if (JOptionPane.VALUE_PROPERTY.equals(e.getPropertyName())) {
                 dialog.dispose();
@@ -435,6 +461,7 @@ public class MainScenePanel extends JPanel {
         System.exit(0);
     }
 
+    // מפעיל את לולאת המשחק שמעדכנת אויבים, פרסים, טיימר וציור
     public void gameLoop() {
         new Thread(() -> {
             while (isGameRunning) {
@@ -458,6 +485,7 @@ public class MainScenePanel extends JPanel {
         }).start();
     }
 
+    // מעדכן תנועת אויבים ובודק פגיעה בשחקן
     private boolean updateEnemies() {
         for (int i = 0; i < this.enemies.length; i++) {
             if (this.enemies[i] == null) {
@@ -481,6 +509,7 @@ public class MainScenePanel extends JPanel {
         return true;
     }
 
+    // בודק אם אויב פגע בעוגה או באויב אחר
     private boolean enemyHitObstacle(int enemyIndex) {
         if (checkEnemyCakeCollision(this.enemies[enemyIndex])) {
             return true;
@@ -497,6 +526,7 @@ public class MainScenePanel extends JPanel {
         return false;
     }
 
+    // מחזיר אויב למיקום הקודם ומטפל בכיוון אחרי פגיעה
     private void moveEnemyBack(int enemyIndex, int oldX, int oldY) {
         this.enemies[enemyIndex].setX(oldX);
         this.enemies[enemyIndex].setY(oldY);
@@ -509,6 +539,7 @@ public class MainScenePanel extends JPanel {
         this.enemies[enemyIndex].reverseDirection();
     }
 
+    // מעדכן את הטיימר ובודק אם הזמן נגמר
     private boolean updateTimer() {
         timerCounter++;
 
@@ -531,6 +562,7 @@ public class MainScenePanel extends JPanel {
         return true;
     }
 
+    // מציג חלון הפסד ומטפל בבחירה של הפעלה מחדש או חזרה לתפריט
     private boolean handleGameOver(String message, String title) {
         Utils.stopMusic();
 
@@ -545,6 +577,7 @@ public class MainScenePanel extends JPanel {
         ImageIcon originalIcon = new ImageIcon(getClass().getResource("/BellPepper_Front.png"));
         Image scaledImage = originalIcon.getImage().getScaledInstance(60, 60, Image.SCALE_SMOOTH);
         ImageIcon pepperIcon = new ImageIcon(scaledImage);
+
         UIManager.put("OptionPane.background", Color.WHITE);
         UIManager.put("Panel.background", Color.WHITE);
 
@@ -567,12 +600,13 @@ public class MainScenePanel extends JPanel {
         dialog.pack();
         dialog.setLocationRelativeTo(parentWindow);
         dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
-        // מאזין שמחכה שהשחקן ילחץ על אחד הכפתורים כדי לסגור את החלון
+
         pane.addPropertyChangeListener(e -> {
             if (JOptionPane.VALUE_PROPERTY.equals(e.getPropertyName())) {
                 dialog.dispose();
             }
         });
+
         dialog.setVisible(true);
 
         Object selectedValue = pane.getValue();
@@ -585,17 +619,19 @@ public class MainScenePanel extends JPanel {
             Utils.syncButtonIcon(this.soundButton);
 
             return true;
-        }else {
+        } else {
             Utils.playMusic();
 
             if (parentWindow != null) {
                 parentWindow.dispose();
             }
+
             new MainMenu();
             return false;
         }
     }
 
+    // סוגר את חלון המשחק ופותח את התפריט הראשי
     private void closeWindowAndOpenMenu() {
         Window parentWindow = SwingUtilities.windowForComponent(this);
 
@@ -606,6 +642,7 @@ public class MainScenePanel extends JPanel {
         new MainMenu();
     }
 
+    // בודק התנגשות בין השחקן לאויב עם מלבני פגיעה קטנים
     private boolean checkCollision(Player player, Enemy enemy) {
         int playerPadding = 15;
 
@@ -628,6 +665,7 @@ public class MainScenePanel extends JPanel {
         return playerHitbox.intersects(enemyHitbox);
     }
 
+    // בודק התנגשות בין שני אויבים
     private boolean checkEnemyCollision(Enemy enemy1, Enemy enemy2) {
         return (enemy1.getX() + enemy1.getWidth() > enemy2.getX()) &&
                 (enemy1.getX() < enemy2.getX() + enemy2.getWidth()) &&
@@ -635,6 +673,7 @@ public class MainScenePanel extends JPanel {
                 (enemy1.getY() < enemy2.getY() + enemy2.getHeight());
     }
 
+    // בודק אם אויב נוגע בעוגה
     private boolean checkEnemyCakeCollision(Enemy enemy) {
         Rectangle enemyRect = enemy.getRect();
 
@@ -647,6 +686,7 @@ public class MainScenePanel extends JPanel {
         return false;
     }
 
+    // מצייר את כל מסך המשחק
     @Override
     public void paintComponent(Graphics graphics) {
         super.paintComponent(graphics);
@@ -656,6 +696,7 @@ public class MainScenePanel extends JPanel {
         drawPauseOverlay(graphics);
     }
 
+    // מצייר רקע, אויבים, עוגות, שחקן וסוכריות
     private void drawGameObjects(Graphics graphics) {
         if (this.levelsBackground != null) {
             this.levelsBackground.paint(graphics, this.getWidth(), this.getHeight());
@@ -690,6 +731,7 @@ public class MainScenePanel extends JPanel {
         }
     }
 
+    // מצייר ניקוד, שלב וטיימר
     private void drawHud(Graphics graphics) {
         int buttonX = 20;
         int buttonWidth = 50;
@@ -731,6 +773,7 @@ public class MainScenePanel extends JPanel {
         );
     }
 
+    // מצייר טקסט עם צל כדי שיהיה קריא יותר
     private void drawTextWithShadow(Graphics graphics, String text, int x, int y, Color color) {
         graphics.setColor(Color.BLACK);
         graphics.drawString(text, x + 2, y + 2);
@@ -739,6 +782,7 @@ public class MainScenePanel extends JPanel {
         graphics.drawString(text, x, y);
     }
 
+    // מחזיר את הזמן בפורמט דקות ושניות
     private String getTimeString() {
         int minutes = this.timeLeft / 60;
         int seconds = this.timeLeft % 60;
@@ -746,6 +790,7 @@ public class MainScenePanel extends JPanel {
         return String.format("Time: %02d:%02d", minutes, seconds);
     }
 
+    // מצייר שכבת עצירה או פתיחת שלב מעל המשחק
     private void drawPauseOverlay(Graphics graphics) {
         if (!isPaused) {
             return;
@@ -772,6 +817,7 @@ public class MainScenePanel extends JPanel {
         graphics.drawString(text, x, y);
     }
 
+    // מנגן קובץ סאונד מתוך תיקיית המשאבים
     private void playSound(String soundFileName) {
         try {
             URL soundURL = getClass().getResource(soundFileName);

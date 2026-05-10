@@ -64,7 +64,6 @@ public class MazeBuilder {
         }
     }
 
-    // --- תבנית 1: "עיר צפופה" ---
     // מפוזר על כל המסך בצורה שווה עם חסימות שזזות
     private void drawCityGrid(int cols, int rows, int difficulty) {
         int shift = difficulty % 2;
@@ -90,7 +89,7 @@ public class MazeBuilder {
         }
     }
 
-    // --- תבנית 2: סלאלום מלא מקצה לקצה ---
+    //  תבנית 2: סלאלום מלא מקצה לקצה
     private void drawFullSlalom(int cols, int rows, int difficulty) {
         int wallSpacing = 5; // מרווח בין העמודים שמאפשר מעבר קל
         boolean gapAtBottom = (difficulty % 2 == 0);

@@ -13,7 +13,4 @@ public class GameProgress {
         }
     }
 
-    public static int getHighestUnlockedLevel() {
-        return highestUnlockedLevel;
-    }
 }

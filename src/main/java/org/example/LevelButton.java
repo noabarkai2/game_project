@@ -15,7 +15,7 @@ public class LevelButton extends JButton {
         setContentAreaFilled(false);
         setBorderPainted(false);
         setFocusPainted(false);
-        setOpaque(false);
+        setOpaque(false); //הכפתור לא יצייר רקע רגיל של Java
 
         if (unlocked) {
             setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -23,6 +23,7 @@ public class LevelButton extends JButton {
             setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
         }
     }
+    // הפונקציה מציירת את הכפתור, Graphics2D נותן ציור חלק ומתקדם יותר
 
     @Override
     protected void paintComponent(Graphics graphics) {
@@ -78,7 +79,7 @@ public class LevelButton extends JButton {
 
         g2.setStroke(new BasicStroke(5));
         g2.setColor(Color.WHITE);
-
+        //מצייר את הקשת של המנעול
         g2.drawArc(
                 lockX + 5,
                 lockY - 18,
@@ -87,7 +88,7 @@ public class LevelButton extends JButton {
                 0,
                 180
         );
-
+        //מצייר את הריבוע של המנעול
         g2.fillRoundRect(
                 lockX,
                 lockY,
@@ -98,6 +99,7 @@ public class LevelButton extends JButton {
         );
 
         g2.setColor(new Color(90, 60, 30));
+        // את החור של המנעול
         g2.fillOval(lockX + 11, lockY + 8, 6, 6);
         g2.fillRect(lockX + 13, lockY + 13, 2, 7);
     }

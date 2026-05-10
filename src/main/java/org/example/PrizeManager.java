@@ -23,6 +23,7 @@ public class PrizeManager {
     private String[] candyImages;
     private Random random = new Random();
 
+    // יוצר את כל הפרסים בשלב ושומר אותם במערך
     public Prize[] createPrizes(
             int regularCandiesAmount,
             Cake[] cakes,
@@ -34,6 +35,8 @@ public class PrizeManager {
         this.cakesCount = cakesCount;
         this.enemies = enemies;
         this.candyImages = candyImages;
+
+        // מערך של סוכריות רגילות וסוכריה על מקל
         this.prizes = new Prize[regularCandiesAmount + 1];
 
         createRegularCandies(regularCandiesAmount);
@@ -42,6 +45,7 @@ public class PrizeManager {
         return this.prizes;
     }
 
+    // יוצר את הסוכריות הרגילות במקומות תקינים במפה
     private void createRegularCandies(int amount) {
         int safeMargin = 20;
 
@@ -73,6 +77,7 @@ public class PrizeManager {
         }
     }
 
+    // יוצר את הסוכריה על מקל במיקום הכי מתאים שנמצא
     private void createLollipop(int index) {
         Point point = findBestLollipopLocation(index);
 
@@ -86,9 +91,12 @@ public class PrizeManager {
         );
     }
 
+    // מחפש את המיקום הכי טוב לסוכריה על מקל ליד עוגות במבוך
     private Point findBestLollipopLocation(int prizeIndex) {
         Point bestPoint = null;
         int bestScore = -1;
+
+        int gapFromCake = 8;
 
         for (int i = 0; i < cakesCount; i++) {
             if (cakes[i] == null) {
@@ -97,31 +105,36 @@ public class PrizeManager {
 
             Rectangle cakeRect = cakes[i].getRect();
 
-            int[] candidateX = {
-                    cakeRect.x + 55,
-                    cakeRect.x - LOLLIPOP_WIDTH - 5,
-                    cakeRect.x,
-                    cakeRect.x,
-                    cakeRect.x + 55,
-                    cakeRect.x - LOLLIPOP_WIDTH - 5,
-                    cakeRect.x + 55,
-                    cakeRect.x - LOLLIPOP_WIDTH - 5
+            // יוצר מיקומים אפשריים סביב העוגה
+            Point[] candidates = {
+                    // מימין לעוגה
+                    new Point(cakeRect.x + cakeRect.width + gapFromCake, cakeRect.y),
+
+                    // משמאל לעוגה
+                    new Point(cakeRect.x - LOLLIPOP_WIDTH - gapFromCake, cakeRect.y),
+
+                    // מתחת לעוגה
+                    new Point(cakeRect.x, cakeRect.y + cakeRect.height + gapFromCake),
+
+                    // מעל העוגה
+                    new Point(cakeRect.x, cakeRect.y - LOLLIPOP_HEIGHT - gapFromCake),
+
+                    // אלכסון ימין למטה
+                    new Point(cakeRect.x + cakeRect.width + gapFromCake, cakeRect.y + cakeRect.height + gapFromCake),
+
+                    // אלכסון שמאל למטה
+                    new Point(cakeRect.x - LOLLIPOP_WIDTH - gapFromCake, cakeRect.y + cakeRect.height + gapFromCake),
+
+                    // אלכסון ימין למעלה
+                    new Point(cakeRect.x + cakeRect.width + gapFromCake, cakeRect.y - LOLLIPOP_HEIGHT - gapFromCake),
+
+                    // אלכסון שמאל למעלה
+                    new Point(cakeRect.x - LOLLIPOP_WIDTH - gapFromCake, cakeRect.y - LOLLIPOP_HEIGHT - gapFromCake)
             };
 
-            int[] candidateY = {
-                    cakeRect.y,
-                    cakeRect.y,
-                    cakeRect.y + 55,
-                    cakeRect.y - LOLLIPOP_HEIGHT - 5,
-                    cakeRect.y + 55,
-                    cakeRect.y + 55,
-                    cakeRect.y - LOLLIPOP_HEIGHT - 5,
-                    cakeRect.y - LOLLIPOP_HEIGHT - 5
-            };
-
-            for (int j = 0; j < candidateX.length; j++) {
-                int x = candidateX[j];
-                int y = candidateY[j];
+            for (int j = 0; j < candidates.length; j++) {
+                int x = candidates[j].x;
+                int y = candidates[j].y;
 
                 int score = getLollipopLocationScore(x, y, prizeIndex);
 
@@ -139,6 +152,7 @@ public class PrizeManager {
         return findFallbackLollipopLocation(prizeIndex);
     }
 
+    // נותן ציון למיקום לפי עוגות אויבים ושטח פתוח
     private int getLollipopLocationScore(int x, int y, int prizeIndex) {
         if (!isValidPrizeLocation(x, y, LOLLIPOP_WIDTH, LOLLIPOP_HEIGHT, prizeIndex)) {
             return -1;
@@ -169,6 +183,7 @@ public class PrizeManager {
         return nearbyCakes * 15 + enemyScore * 3 + (4 - openSides) * 10;
     }
 
+    // סופר כמה עוגות קרובות למיקום של הסוכריה על מקל
     private int countNearbyCakes(int x, int y) {
         Rectangle searchArea = new Rectangle(
                 x - LOLLIPOP_NEAR_CAKE_DISTANCE,
@@ -188,6 +203,7 @@ public class PrizeManager {
         return count;
     }
 
+    // סופר כמה צדדים סביב הסוכריה פתוחים בלי עוגות
     private int countOpenSides(int x, int y) {
         int openSides = 0;
         int checkDistance = 65;
@@ -239,6 +255,7 @@ public class PrizeManager {
         return openSides;
     }
 
+    // בודק אם אזור מסוים נוגע בעוגה
     private boolean areaTouchesCake(Rectangle area) {
         for (int i = 0; i < cakesCount; i++) {
             if (cakes[i] != null && area.intersects(cakes[i].getRect())) {
@@ -249,6 +266,7 @@ public class PrizeManager {
         return false;
     }
 
+    // נותן ציון לפי המרחק של הסוכריה מהאויבים
     private int getEnemyScore(int x, int y) {
         Rectangle tooCloseArea = new Rectangle(
                 x - LOLLIPOP_MIN_DISTANCE_FROM_ENEMY,
@@ -285,6 +303,7 @@ public class PrizeManager {
         return score;
     }
 
+    // בודק שהסוכריה על מקל לא קרובה מדי לנקודת ההתחלה של השחקן
     private boolean isFarFromPlayerStart(int x, int y) {
         Rectangle lollipopRect = new Rectangle(x, y, LOLLIPOP_WIDTH, LOLLIPOP_HEIGHT);
 
@@ -298,6 +317,7 @@ public class PrizeManager {
         return !lollipopRect.intersects(playerStartArea);
     }
 
+    // מחפש מיקום חלופי לסוכריה על מקל אם לא נמצא מיקום טוב
     private Point findFallbackLollipopLocation(int prizeIndex) {
         int minX = GameSettings.WALL_LEFT + 20;
         int maxX = Main.WINDOW_WIDTH - GameSettings.WALL_RIGHT - LOLLIPOP_WIDTH - 20;
@@ -321,6 +341,7 @@ public class PrizeManager {
         return new Point(Main.WINDOW_WIDTH / 2, Main.WINDOW_HEIGHT / 2);
     }
 
+    // בודק שהפרס לא מחוץ למפה ולא נוגע בעוגה או בפרס אחר
     private boolean isValidPrizeLocation(int x, int y, int width, int height, int currentPrizeIndex) {
         if (!GameSettings.isInsidePlayArea(x, y, width, height)) {
             return false;

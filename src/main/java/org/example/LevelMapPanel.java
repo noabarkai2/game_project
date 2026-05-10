@@ -23,12 +23,10 @@ public class LevelMapPanel extends BackgroundPanel {
         this.setBounds(0, 0, width, height);
         this.setLayout(null);
 
-        RoundedButton backButton =
-                RoundedButton.createPanelBackButton(width, mainMenu, menuPanel);
+        RoundedButton backButton = RoundedButton.createPanelBackButton(width, mainMenu, menuPanel);
         this.add(backButton);
 
-        RoundedButton exitButton =
-                RoundedButton.createExitButton(width);
+        RoundedButton exitButton = RoundedButton.createExitButton(width);
         this.add(exitButton);
 
         createLevelButtons(width);
@@ -69,7 +67,6 @@ public class LevelMapPanel extends BackgroundPanel {
 
     private void openGame(int selectedLevel) {
         mainMenu.dispose();
-
         JFrame window = new JFrame("Sugar Rush");
         window.setSize(Main.WINDOW_WIDTH, Main.WINDOW_HEIGHT);
         window.setUndecorated(true);
@@ -77,7 +74,6 @@ public class LevelMapPanel extends BackgroundPanel {
         window.setLocationRelativeTo(null);
         window.setLayout(null);
         window.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-
         window.add(
                 new MainScenePanel(
                         0,

@@ -12,6 +12,7 @@ public class EnemyBellPepper extends Enemy {
     private int escapeDirection = 0;
     private int escapeTimer = 0;
 
+    //יוצר פלפל חדש שומר את השחקן כמטרה וטוען תמונות לפי כיוון
     public EnemyBellPepper(int x, int y, int width, int height, Player player) {
         super(x, y, width, height);
         this.targetPlayer = player;
@@ -22,7 +23,7 @@ public class EnemyBellPepper extends Enemy {
         setLeftImage(loadImage("/BellPepper_Left.png"));
         setCurrentImage(getFrontImage());
     }
-
+    //מופעל כשהפלפל נתקע שומר את הכיוון החסום ובוחר כיוון עקיפה זמני
     public void suspendTracking(int frames) {
         int blockedDirection = getDirection();
 
@@ -31,7 +32,7 @@ public class EnemyBellPepper extends Enemy {
         this.escapeDirection = chooseEscapeDirection(blockedDirection);
         this.escapeTimer = frames;
     }
-
+    //מריץ את תנועת הפלפל בכל פריים קודם עקיפה אם קיימת אחרת רדיפה אחרי השחקן
     @Override
     public void move() {
         if (!isMoving() || this.targetPlayer == null) {
@@ -85,6 +86,7 @@ public class EnemyBellPepper extends Enemy {
         tryMove(fourthDirection);
     }
 
+    //בוחר כיוון עקיפה לפי הכיוון שנחסם והמיקום של השחקן
     private int chooseEscapeDirection(int blockedDirection) {
         int diffX = this.targetPlayer.getX() - this.getX();
         int diffY = this.targetPlayer.getY() - this.getY();
@@ -124,6 +126,7 @@ public class EnemyBellPepper extends Enemy {
         return DOWN;
     }
 
+    //מסמן כיוון מסוים כחסום למשך מספר פריימים
     private void blockDirection(int direction, int frames) {
         if (direction == RIGHT) {
             rightBlockedTimer = frames;
@@ -135,7 +138,7 @@ public class EnemyBellPepper extends Enemy {
             downBlockedTimer = frames;
         }
     }
-
+    //מוריד כל פריים את זמן החסימה מכל כיוון
     private void decreaseBlockedTimers() {
         if (rightBlockedTimer > 0) {
             rightBlockedTimer--;
@@ -153,7 +156,7 @@ public class EnemyBellPepper extends Enemy {
             downBlockedTimer--;
         }
     }
-
+    //מנסה להזיז את הפלפל לכיוון מסוים מעדכן תמונה ומחזיר אם התנועה הצליחה
     private boolean tryMove(int direction) {
         if (isDirectionBlocked(direction)) {
             return false;
@@ -205,7 +208,7 @@ public class EnemyBellPepper extends Enemy {
 
         return false;
     }
-
+    //בודק אם הכיוון המבוקש חסום כרגע
     private boolean isDirectionBlocked(int direction) {
         if (direction == RIGHT) {
             return rightBlockedTimer > 0;
@@ -225,7 +228,7 @@ public class EnemyBellPepper extends Enemy {
 
         return false;
     }
-
+    //מחזיר את הכיוון ההפוך לכיוון שנשלח
     private int getOppositeDirection(int direction) {
         if (direction == RIGHT) {
             return LEFT;

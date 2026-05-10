@@ -2,7 +2,6 @@ package org.example;
 
 public class GameSettings {
     public static final int MAX_LEVELS = 15;
-
     public static final int WALL_LEFT = 50;
     public static final int WALL_RIGHT = 48;
     public static final int WALL_TOP = 35;

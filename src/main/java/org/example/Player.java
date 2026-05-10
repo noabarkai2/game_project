@@ -99,6 +99,7 @@ public class Player {
         this.lastMoveTime = System.currentTimeMillis();
     }
 
+    // טוען תמונה מתוך תיקיית המשאבים
     private Image loadImage(String imagePath) {
         try {
             InputStream imageStream = getClass().getResourceAsStream(imagePath);
@@ -113,6 +114,7 @@ public class Player {
         }
     }
 
+    // מחשב את הגודל והמיקום של הגיף ביחס לשחקן
     private void updateGifDimensions() {
         this.gifDrawWidth = (int) (this.width * gifScaleMultiplier);
         this.gifDrawHeight = (int) (this.height * gifScaleMultiplier);
@@ -121,6 +123,7 @@ public class Player {
         this.gifOffsetY = (this.height - this.gifDrawHeight) / 2;
     }
 
+    // מחזיר מהירות תנועה רגילה או מהירה יותר בזמן שינוי כיוון
     private int getMovementSpeed(int newDirection) {
         this.lastMoveTime = System.currentTimeMillis();
 
@@ -135,6 +138,7 @@ public class Player {
         return speed;
     }
 
+    // מזיז את השחקן ימינה אם הוא לא עבר את גבול המסך
     public void moveRight() {
         int speed = getMovementSpeed(RIGHT);
 
@@ -145,6 +149,7 @@ public class Player {
         this.currentImage = this.rightImage;
     }
 
+    // מזיז את השחקן שמאלה אם הוא לא עבר את גבול המסך
     public void moveLeft() {
         int speed = getMovementSpeed(LEFT);
 
@@ -155,6 +160,7 @@ public class Player {
         this.currentImage = this.leftImage;
     }
 
+    // מזיז את השחקן למטה אם הוא לא עבר את גבול המסך
     public void moveDown() {
         int speed = getMovementSpeed(DOWN);
 
@@ -165,6 +171,7 @@ public class Player {
         this.currentImage = this.downImage;
     }
 
+    // מזיז את השחקן למעלה אם הוא לא עבר את גבול המסך
     public void moveUp() {
         int speed = getMovementSpeed(UP);
 
@@ -175,6 +182,7 @@ public class Player {
         this.currentImage = this.upImage;
     }
 
+    // מפרק את קובץ הגיף לפריימים ושומר אותם במערך
     private void loadGifFrames(String path) {
         try {
             InputStream is = getClass().getResourceAsStream(path);
@@ -202,6 +210,7 @@ public class Player {
         }
     }
 
+    // מעביר את הגיף לפריים הבא לפי קצב האנימציה
     private void updateAnimation() {
         if (this.frames == null || this.frames.length <= 1) {
             return;
@@ -219,12 +228,14 @@ public class Player {
         }
     }
 
+    // משנה את גודל השחקן ומחשב מחדש את גודל הגיף
     public void setSize(int width, int height) {
         this.width = width;
         this.height = height;
         updateGifDimensions();
     }
 
+    // מצייר את השחקן כתמונה בזמן תנועה או כגיף אחרי עמידה במקום
     public void paint(Graphics graphics, boolean isPaused) {
         long idleTime = System.currentTimeMillis() - this.lastMoveTime;
 
@@ -271,6 +282,7 @@ public class Player {
         }
     }
 
+    // מחזיר מלבן פגיעה של השחקן
     public Rectangle getRect() {
         return new Rectangle(this.x, this.y, this.width, this.height);
     }

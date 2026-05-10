@@ -179,7 +179,8 @@ public class MainScenePanel extends JPanel {
         int difficultyTier = (level - 1) / 3;
 
         int normalEnemies = 3 + difficultyTier;
-        int smartEnemies = Math.min(difficultyTier, 2);
+        int smartEnemies = 2;
+//        int smartEnemies = Math.min(difficultyTier, 2);
 
         setupEnemiesForLevel(normalEnemies, smartEnemies);
         startEnemiesMovement();
@@ -499,11 +500,13 @@ public class MainScenePanel extends JPanel {
     private void moveEnemyBack(int enemyIndex, int oldX, int oldY) {
         this.enemies[enemyIndex].setX(oldX);
         this.enemies[enemyIndex].setY(oldY);
-        this.enemies[enemyIndex].reverseDirection();
 
         if (this.enemies[enemyIndex] instanceof EnemyBellPepper) {
-            ((EnemyBellPepper) this.enemies[enemyIndex]).suspendTracking(40);
+            ((EnemyBellPepper) this.enemies[enemyIndex]).suspendTracking(140);
+            return;
         }
+
+        this.enemies[enemyIndex].reverseDirection();
     }
 
     private boolean updateTimer() {

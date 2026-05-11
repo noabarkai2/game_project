@@ -44,7 +44,7 @@ public class Utils {
         }
     }
 
-    // מסנכרן את תמונת כפתור הסאונד לפי מצב המוזיקה
+    //מסנכרן את תמונת כפתור הסאונד לפי מצב המוזיקה
     public static void syncButtonIcon(JButton button) {
         if (isMusicPlaying && soundOnIcon != null) {
             button.setIcon(soundOnIcon);

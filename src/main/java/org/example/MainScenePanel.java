@@ -4,10 +4,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
-import java.net.URL;
 import java.util.Random;
 
 public class MainScenePanel extends JPanel {
@@ -400,7 +396,7 @@ public class MainScenePanel extends JPanel {
     private void collectPrize(Prize prize) {
         prize.setCollected(true);
         this.score += prize.getPoints();
-        playSound("/Sweet_Reward.wav");
+        SoundEffects.play("/Sweet_Reward.wav");
     }
 
     // עובר לשלב הבא או מפעיל ניצחון בסיום המשחק
@@ -423,7 +419,7 @@ public class MainScenePanel extends JPanel {
         stopGame();
 
         Utils.stopMusic();
-        playSound("/Victory_sound.wav");
+        SoundEffects.play("/Victory_sound.wav");
 
         ImageIcon originalIcon = new ImageIcon(getClass().getResource("/TrophyIcon.png"));
         Image scaledImage = originalIcon.getImage().getScaledInstance(60, 60, Image.SCALE_SMOOTH);
@@ -570,7 +566,7 @@ public class MainScenePanel extends JPanel {
             this.tickingSound.stop();
         }
 
-        playSound("/Losing_sound.wav");
+        SoundEffects.play("/Losing_sound.wav");
 
         Object[] options = {"Restart Level", "Back to Menu"};
 
@@ -817,23 +813,4 @@ public class MainScenePanel extends JPanel {
         graphics.drawString(text, x, y);
     }
 
-    // מנגן קובץ סאונד מתוך תיקיית המשאבים
-    private void playSound(String soundFileName) {
-        try {
-            URL soundURL = getClass().getResource(soundFileName);
-
-            if (soundURL != null) {
-                AudioInputStream audioIn = AudioSystem.getAudioInputStream(soundURL);
-                Clip clip = AudioSystem.getClip();
-
-                clip.open(audioIn);
-                clip.start();
-            } else {
-                System.out.println("שגיאה: לא מצאתי את קובץ הסאונד " + soundFileName);
-            }
-        } catch (Exception e) {
-            System.out.println("שגיאה בניגון הסאונד:");
-            e.printStackTrace();
-        }
-    }
 }

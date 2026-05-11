@@ -53,7 +53,7 @@ public class Utils {
         }
     }
 
-    // יוצר כפתור שמדליק ומכבה מוזיקת רקע
+    //יוצר כפתור שמדליק ומכבה מוזיקת רקע
     public static JButton createSoundButton() {
         if (soundOnIcon == null || soundOffIcon == null) {
             soundOnIcon = resizeIcon("/sound_on.png", 50, 50);

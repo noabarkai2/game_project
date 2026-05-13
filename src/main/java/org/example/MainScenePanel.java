@@ -4,7 +4,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.util.Random;
 
 public class MainScenePanel extends JPanel {
     private Player player;
@@ -18,8 +17,6 @@ public class MainScenePanel extends JPanel {
     private int timeLeft = 60;
     private int timerCounter = 0;
 
-    private final int CAKE_SIZE = 50;
-    private final int ENEMY_SIZE = 46;
     private final int MAX_LEVELS = GameSettings.MAX_LEVELS;
 
     private String[] candyImages;
@@ -27,6 +24,7 @@ public class MainScenePanel extends JPanel {
     private JButton soundButton;
     private SoundManager tickingSound;
     private PrizeManager prizeManager;
+    private EnemyManager enemyManager;
 
     private boolean isPaused = false;
     private boolean isLevelStarting = true;
@@ -64,7 +62,7 @@ public class MainScenePanel extends JPanel {
         };
     }
 
-    // מאתחל את הפאנל, הרקע, הסאונד והגדרות הבסיס של המסך
+    // מאתחל את הפאנל הרקע הסאונד והגדרות הבסיס של המסך
     private void initializePanel(int x, int y, int width, int height) {
         this.tickingSound = new SoundManager("/Clock_sound.wav");
         this.prizeManager = new PrizeManager();
@@ -106,7 +104,7 @@ public class MainScenePanel extends JPanel {
         this.addKeyListener(movementListener);
     }
 
-    // מוסיף למסך כפתור סאונד, חזרה ויציאה
+    // מוסיף למסך כפתור סאונד חזרה ויציאה
     private void initializeButtons(int width) {
         this.soundButton = Utils.createSoundButton();
         this.add(this.soundButton);
@@ -118,7 +116,6 @@ public class MainScenePanel extends JPanel {
         this.add(exitButton);
     }
 
-    // מחזיר האם המשחק כרגע במצב עצירה
     public boolean isPaused() {
         return isPaused;
     }
@@ -132,7 +129,7 @@ public class MainScenePanel extends JPanel {
         }
     }
 
-    // טוען שלב חדש ומאתחל שחקן, מבוך, אויבים ופרסים
+    // טוען שלב חדש ומאתחל שחקן מבוך אויבים ופרסים
     private void loadLevel(int level) {
         resetLevelTimer(level);
         resetPlayerPosition();
@@ -186,15 +183,15 @@ public class MainScenePanel extends JPanel {
         this.cakesCount = mazeBuilder.getCakesCount();
     }
 
-    // יוצר אויבים לפי רמת הקושי של השלב
+    // יוצר אויבים דרך מחלקת ניהול אויבים
     private void createEnemies(int level) {
-        int difficultyTier = (level - 1) / 3;
+        this.enemyManager = new EnemyManager(
+                this.player,
+                this.cakes,
+                this.cakesCount
+        );
 
-        int normalEnemies = 3 + difficultyTier;
-        int smartEnemies = Math.min(difficultyTier,2);
-
-        setupEnemiesForLevel(normalEnemies, smartEnemies);
-        startEnemiesMovement();
+        this.enemies = this.enemyManager.createEnemies(level);
     }
 
     // יוצר סוכריות רגילות וסוכריה מיוחדת בשלב
@@ -209,117 +206,6 @@ public class MainScenePanel extends JPanel {
                 this.enemies,
                 this.candyImages
         );
-    }
-
-    // מפעיל תנועה לכל האויבים שנוצרו
-    private void startEnemiesMovement() {
-        for (int i = 0; i < this.enemies.length; i++) {
-            if (this.enemies[i] != null) {
-                this.enemies[i].setIsMoving(true);
-            }
-        }
-    }
-
-    // בונה את מערך האויבים וממקם אותם במקומות תקינים
-    private void setupEnemiesForLevel(int normalEnemies, int smartEnemies) {
-        int totalEnemies = normalEnemies + smartEnemies;
-        this.enemies = new Enemy[totalEnemies];
-
-        Random random = new Random();
-
-        int cols = Main.WINDOW_WIDTH / CAKE_SIZE;
-        int rows = Main.WINDOW_HEIGHT / CAKE_SIZE;
-
-        for (int i = 0; i < totalEnemies; i++) {
-            Point spawnPoint = findEnemySpawnPoint(random, cols, rows);
-
-            if (i < normalEnemies) {
-                createRegularEnemy(i, spawnPoint.x, spawnPoint.y);
-            } else {
-                this.enemies[i] = new EnemyBellPepper(
-                        spawnPoint.x,
-                        spawnPoint.y,
-                        ENEMY_SIZE,
-                        ENEMY_SIZE,
-                        this.player
-                );
-            }
-        }
-    }
-
-    // מחפש נקודת התחלה תקינה לאויב
-    private Point findEnemySpawnPoint(Random random, int cols, int rows) {
-        int x;
-        int y;
-
-        do {
-            int gridX = random.nextInt(cols - 2) + 1;
-            int gridY = random.nextInt(rows - 2) + 1;
-
-            x = (gridX * CAKE_SIZE) + 2;
-            y = (gridY * CAKE_SIZE) + 2;
-
-        } while (!isValidEnemyLocation(x, y));
-
-        return new Point(x, y);
-    }
-
-    // בודק אם מיקום האויב פנוי מעוגות, שחקן ואויבים אחרים
-    private boolean isValidEnemyLocation(int x, int y) {
-        Rectangle enemyRect = new Rectangle(x, y, ENEMY_SIZE, ENEMY_SIZE);
-
-        if (touchesCake(enemyRect)) {
-            return false;
-        }
-
-        Rectangle safeZone = new Rectangle(50, 50, 200, 200);
-
-        if (enemyRect.intersects(safeZone)) {
-            return false;
-        }
-
-        return !touchesOtherEnemy(enemyRect);
-    }
-
-    // בודק אם מלבן מסוים נוגע בעוגה
-    private boolean touchesCake(Rectangle rect) {
-        for (int i = 0; i < this.cakesCount; i++) {
-            if (this.cakes[i] != null && rect.intersects(this.cakes[i].getRect())) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    // בודק אם מלבן האויב נוגע באויב אחר
-    private boolean touchesOtherEnemy(Rectangle enemyRect) {
-        if (this.enemies == null) {
-            return false;
-        }
-
-        for (int i = 0; i < this.enemies.length; i++) {
-            if (this.enemies[i] != null && enemyRect.intersects(this.enemies[i].getRect())) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    // יוצר אויב רגיל לפי סוג משתנה
-    private void createRegularEnemy(int index, int x, int y) {
-        int type = index % 4;
-
-        if (type == 0) {
-            this.enemies[index] = new EnemyBroccoli(x, y, ENEMY_SIZE, ENEMY_SIZE);
-        } else if (type == 1) {
-            this.enemies[index] = new EnemyEggplant(x, y, ENEMY_SIZE, ENEMY_SIZE);
-        } else if (type == 2) {
-            this.enemies[index] = new EnemyGeneric(x, y, ENEMY_SIZE, ENEMY_SIZE, "Carrot");
-        } else {
-            this.enemies[index] = new EnemyGeneric(x, y, ENEMY_SIZE, ENEMY_SIZE, "Corn");
-        }
     }
 
     // בודק אם השחקן נוגע בעוגה כדי למנוע מעבר דרך קירות
@@ -392,7 +278,7 @@ public class MainScenePanel extends JPanel {
         );
     }
 
-    // מסמן סוכריה כנאספה, מוסיף ניקוד ומשמיע צליל
+    // מסמן סוכריה כנאספה מוסיף ניקוד ומשמיע צליל
     private void collectPrize(Prize prize) {
         prize.setCollected(true);
         this.score += prize.getPoints();
@@ -429,7 +315,7 @@ public class MainScenePanel extends JPanel {
         UIManager.put("Panel.background", Color.WHITE);
 
         JOptionPane pane = new JOptionPane(
-                "ניצחת במשחק! כל הכבוד!\nהניקוד שלך: " + this.score,
+                "ניצחת במשחק כל הכבוד\nהניקוד שלך: " + this.score,
                 JOptionPane.PLAIN_MESSAGE,
                 JOptionPane.DEFAULT_OPTION,
                 trophyIcon
@@ -457,12 +343,13 @@ public class MainScenePanel extends JPanel {
         System.exit(0);
     }
 
-    // מפעיל את לולאת המשחק שמעדכנת אויבים, פרסים, טיימר וציור
+    // מפעיל את לולאת המשחק שמעדכנת אויבים פרסים טיימר וציור
     public void gameLoop() {
         new Thread(() -> {
             while (isGameRunning) {
                 if (!isPaused) {
-                    if (!updateEnemies()) {
+                    if (enemyManager.updateEnemies()) {
+                        handleGameOver("אוי לא נתפסת על ידי הירקות", "Game Over");
                         stopGame();
                         return;
                     }
@@ -481,60 +368,6 @@ public class MainScenePanel extends JPanel {
         }).start();
     }
 
-    // מעדכן תנועת אויבים ובודק פגיעה בשחקן
-    private boolean updateEnemies() {
-        for (int i = 0; i < this.enemies.length; i++) {
-            if (this.enemies[i] == null) {
-                continue;
-            }
-
-            int oldX = this.enemies[i].getX();
-            int oldY = this.enemies[i].getY();
-
-            this.enemies[i].move();
-
-            if (enemyHitObstacle(i)) {
-                moveEnemyBack(i, oldX, oldY);
-            }
-
-            if (checkCollision(this.player, this.enemies[i])) {
-                return handleGameOver("אוי לא! נתפסת על ידי הירקות!", "Game Over");
-            }
-        }
-
-        return true;
-    }
-
-    // בודק אם אויב פגע בעוגה או באויב אחר
-    private boolean enemyHitObstacle(int enemyIndex) {
-        if (checkEnemyCakeCollision(this.enemies[enemyIndex])) {
-            return true;
-        }
-
-        for (int i = 0; i < this.enemies.length; i++) {
-            if (i != enemyIndex &&
-                    this.enemies[i] != null &&
-                    checkEnemyCollision(this.enemies[enemyIndex], this.enemies[i])) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    // מחזיר אויב למיקום הקודם ומטפל בכיוון אחרי פגיעה
-    private void moveEnemyBack(int enemyIndex, int oldX, int oldY) {
-        this.enemies[enemyIndex].setX(oldX);
-        this.enemies[enemyIndex].setY(oldY);
-
-        if (this.enemies[enemyIndex] instanceof EnemyBellPepper) {
-            ((EnemyBellPepper) this.enemies[enemyIndex]).suspendTracking(140);
-            return;
-        }
-
-        this.enemies[enemyIndex].reverseDirection();
-    }
-
     // מעדכן את הטיימר ובודק אם הזמן נגמר
     private boolean updateTimer() {
         timerCounter++;
@@ -551,7 +384,7 @@ public class MainScenePanel extends JPanel {
                 timeLeft = 0;
                 repaint();
 
-                return handleGameOver("אוי לא! הזמן אזל אנא נסה שנית.", "Time's Up");
+                return handleGameOver("אוי לא הזמן אזל אנא נסה שנית", "Time's Up");
             }
         }
 
@@ -638,50 +471,6 @@ public class MainScenePanel extends JPanel {
         new MainMenu();
     }
 
-    // בודק התנגשות בין השחקן לאויב עם מלבני פגיעה קטנים
-    private boolean checkCollision(Player player, Enemy enemy) {
-        int playerPadding = 15;
-
-        Rectangle playerHitbox = new Rectangle(
-                player.getX() + playerPadding,
-                player.getY() + playerPadding,
-                player.getWidth() - playerPadding * 2,
-                player.getHeight() - playerPadding * 2
-        );
-
-        int enemyPadding = 10;
-
-        Rectangle enemyHitbox = new Rectangle(
-                enemy.getX() + enemyPadding,
-                enemy.getY() + enemyPadding,
-                enemy.getWidth() - enemyPadding * 2,
-                enemy.getHeight() - enemyPadding * 2
-        );
-
-        return playerHitbox.intersects(enemyHitbox);
-    }
-
-    // בודק התנגשות בין שני אויבים
-    private boolean checkEnemyCollision(Enemy enemy1, Enemy enemy2) {
-        return (enemy1.getX() + enemy1.getWidth() > enemy2.getX()) &&
-                (enemy1.getX() < enemy2.getX() + enemy2.getWidth()) &&
-                (enemy1.getY() + enemy1.getHeight() > enemy2.getY()) &&
-                (enemy1.getY() < enemy2.getY() + enemy2.getHeight());
-    }
-
-    // בודק אם אויב נוגע בעוגה
-    private boolean checkEnemyCakeCollision(Enemy enemy) {
-        Rectangle enemyRect = enemy.getRect();
-
-        for (int i = 0; i < this.cakesCount; i++) {
-            if (cakes[i] != null && enemyRect.intersects(cakes[i].getRect())) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     // מצייר את כל מסך המשחק
     @Override
     public void paintComponent(Graphics graphics) {
@@ -692,7 +481,7 @@ public class MainScenePanel extends JPanel {
         drawPauseOverlay(graphics);
     }
 
-    // מצייר רקע, אויבים, עוגות, שחקן וסוכריות
+    // מצייר רקע אויבים עוגות שחקן וסוכריות
     private void drawGameObjects(Graphics graphics) {
         if (this.levelsBackground != null) {
             this.levelsBackground.paint(graphics, this.getWidth(), this.getHeight());
@@ -727,7 +516,7 @@ public class MainScenePanel extends JPanel {
         }
     }
 
-    // מצייר ניקוד, שלב וטיימר
+    // מצייר ניקוד שלב וטיימר
     private void drawHud(Graphics graphics) {
         int buttonX = 20;
         int buttonWidth = 50;
@@ -812,5 +601,4 @@ public class MainScenePanel extends JPanel {
 
         graphics.drawString(text, x, y);
     }
-
 }

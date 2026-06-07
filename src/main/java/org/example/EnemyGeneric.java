@@ -1,5 +1,6 @@
 package org.example;
 
+// מחלקה לאויב כללי- גזר או תירס - זזים ברנדומליות לפי הmove של מחלקת אב
 public class EnemyGeneric extends Enemy {
 
     public EnemyGeneric(int x, int y, int width, int height, String vegType) {

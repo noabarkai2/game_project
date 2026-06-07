@@ -7,6 +7,7 @@ public class GameSettings {
     public static final int WALL_TOP = 35;
     public static final int WALL_BOTTOM = 50;
 
+    // בודק שבתוך הגבולות של המשחק
     public static boolean isInsidePlayArea(int x, int y, int width, int height) {
         return x >= WALL_LEFT &&
                 y >= WALL_TOP &&

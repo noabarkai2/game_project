@@ -531,41 +531,39 @@ public class MainScenePanel extends JPanel {
     }
 
     // מפעיל את לולאת המשחק שמעדכנת אויבים, פרסים, טיימר וציור
+// מפעיל את לולאת המשחק שמעדכנת אויבים פרסים טיימר וציור
     public void gameLoop() {
-
-        // לולאת המשחק רצה ב Thread נפרד כדי שהמסך ימשיך להגיב
         new Thread(() -> {
             while (isGameRunning) {
-
-                // אם המשחק לא בעצירה, מעדכנים את המשחק
                 if (!isPaused) {
 
-                    // עדכון אויבים ובדיקה אם אויב פגע בשחקן
                     if (enemyManager.updateEnemies()) {
-                        handleGameOver("אוי לא נתפסת על ידי הירקות", "Game Over");
-                        stopGame();
-                        return;
+                        // שומרים את התשובה של חלון הפסילה (האם להתחיל מחדש או לא)
+                        boolean shouldRestart = handleGameOver("אוי לא נתפסת על ידי הירקות", "Game Over");
+
+                        // אם בחרנו לחזור לתפריט, נעצור את המשחק ונצא מהלולאה
+                        if (!shouldRestart) {
+                            stopGame();
+                            return;
+                        }
+
+                        // אם בחרנו ב-Restart, אנחנו ממשיכים את הלולאה (מדלגים להמשך)
+                        continue;
                     }
 
-                    // בדיקת איסוף פרסים
                     checkPrizeCollisions();
 
-                    // עדכון הטיימר
                     if (!updateTimer()) {
                         stopGame();
                         return;
                     }
                 }
 
-                // ציור מחדש של המשחק
                 repaint();
-
-                // השהייה קצרה לקבלת קצב של בערך 60 פריימים בשנייה
                 Utils.sleep(16);
             }
         }).start();
     }
-
     // מעדכן את הטיימר ובודק אם הזמן נגמר
     private boolean updateTimer() {
 

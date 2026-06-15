@@ -276,7 +276,7 @@ public class EnemyManager {
         this.enemies[enemyIndex].setX(oldX);
         this.enemies[enemyIndex].setY(oldY);
 
-        // אם מדובר בפלפל חכם, עוצרים רדיפה זמנית ומפעילים עקיפה
+        // אם מדובר בפלפל חכם, עוצרים רדיפה זמנית ומפעילים עקיפה- ככל שמגדילים את הפריימים ככה הפלפל מתעכב
         if (this.enemies[enemyIndex] instanceof EnemyBellPepper) {
             ((EnemyBellPepper) this.enemies[enemyIndex]).suspendTracking(140);
             return;
